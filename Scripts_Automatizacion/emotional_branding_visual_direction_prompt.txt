@@ -1,0 +1,17 @@
+# Propósito: Prompt 2 del Emotional Branding System — traduce el DNA emocional a dirección visual completa
+# Origen: The Emotional Branding System
+# API Keys necesarias: Ninguna (prompt para Claude/ChatGPT/Gemini)
+# Cómo usar: Pegar en el mismo LLM después del Prompt 1; pegar el output del Prompt 1 donde dice [PASTE...]
+
+Based on this brand structure:
+[PASTE YOUR BRAND BRIEF FROM STEP 1]
+
+Translate this into a complete visual direction. Include:
+- Typography style (with specific font references)
+- Color palette (primary, secondary, accent — with hex codes)
+- Texture and material feel (chalk, ink bleed, grain, rough, polished)
+- Character/mascot style (illustration style, level of detail, expression)
+- Photography direction (lighting, mood, angles, styling)
+- Layout principles (spacing, composition, hierarchy)
+
+Make every visual decision reinforce the emotion from the brand structure.

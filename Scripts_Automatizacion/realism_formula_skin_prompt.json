@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "proposito": "JSON prompt para generar texturas de piel ultra-realistas con Gemini 2.5 Flash Image",
+    "origen": "THE REALISM FORMULA",
+    "api_keys": "Google AI API key (GOOGLE_API_KEY) si se usa programáticamente",
+    "como_usar": "Pegar el JSON completo en Gemini 2.5 Flash Image o usar vía Google AI API. Ajustar 'subject.main' para cambiar la textura objetivo."
+  },
+  "model": "gemini-2.5-flash-image",
+  "task_type": "generation",
+  "priority": {
+    "primary": "Ultra-detailed close-up image of human skin",
+    "secondary": "Maximum texture detail — pores, peach fuzz, micro-imperfections visible at macro level"
+  },
+  "subject": {
+    "main": "human skin",
+    "attributes": {
+      "texture": "natural, unretouched",
+      "detail_level": "extreme macro",
+      "imperfections": ["visible pores", "peach fuzz", "micro wrinkles", "natural asymmetry", "subtle discoloration"]
+    }
+  },
+  "environment": {
+    "lighting": {
+      "type": "artificial",
+      "direction": "side and slightly top",
+      "quality": "hard with slight diffusion",
+      "color_temperature": "neutral to slightly warm"
+    }
+  },
+  "style": {
+    "camera": {
+      "angle": "extreme close-up",
+      "lens": "macro",
+      "depth_of_field": "shallow — only skin surface in focus",
+      "film_grain": "subtle organic grain"
+    },
+    "aesthetic": "scientific photography, dermatology reference quality"
+  },
+  "constraints": {
+    "exclusions": ["heavy makeup", "foundation", "skin smoothing", "beauty filter", "retouching", "airbrushing", "plastic look", "perfection"]
+  }
+}

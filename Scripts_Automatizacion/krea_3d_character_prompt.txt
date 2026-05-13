@@ -1,0 +1,6 @@
+# Propósito: Prompt del Nodo 1 en Krea — convierte imagen en personaje de vinilo 3D
+# Origen: AI Motion Design System — Claude Code + Krea
+# API Keys necesarias: KREA_API_KEY
+# Cómo usar: Colocar en el nodo image-to-image dentro del workflow de Krea
+
+glossy 3D vinyl toy character head, pure white background, studio lighting, motion design aesthetic, Pixar style, glossy reflections, bold saturated color, clean composition

@@ -1,0 +1,27 @@
+# Propósito: Plantilla de los 8 componentes del prompt cinematográfico de Tim Koda con ejemplo
+# Origen: THE BEST WAY TO PROMPT
+# API Keys necesarias: Ninguna
+# Cómo usar: Rellenar cada componente en orden; el resultado es un prompt completo listo para cualquier generador IA
+
+=== ESTRUCTURA DE 8 COMPONENTES ===
+
+[MEDIUM], [SUBJECT + KEY DETAILS], [SETTING], [MOOD], [LIGHTING], [COLOR PALETTE], [COMPOSITION + LENS + DOF], [FINAL TEXTURE/DETAILS]
+
+=== COMPONENTES EXPLICADOS ===
+MEDIUM:           cinematic photo / editorial shot / fashion campaign / product photography / digital painting
+SUBJECT:          sujeto específico con detalles clave (material, color, condición, rasgos distintivos)
+SETTING:          entorno/locación con detalles de ambiente
+MOOD:             emoción o atmósfera (melancholic, aspirational, raw, luxurious, mysterious)
+LIGHTING:         tipo de luz (golden hour, studio softbox, neon, chiaroscuro, backlit)
+COLOR PALETTE:    colores dominantes y tono (warm tones, cool blues, muted earth, high contrast)
+COMPOSITION:      ángulo + lente + profundidad de campo (close-up, 85mm lens, shallow DOF, f/1.8)
+TEXTURE/DETAILS:  acabado final (film grain, micro scratches, condensation, dust particles)
+
+=== EJEMPLO VERIFICADO (reloj de lujo) ===
+cinematic photo, sleek black sports watch with brushed metal edges and micro scratches, on a wet obsidian stone in a rainy urban alley, moody and dramatic, rim light from a distant street lamp casting hard shadows, deep charcoal and silver tones with warm amber glow in background, tight close-up with 85mm macro lens, shallow depth of field f/1.4, film grain and water droplets on the face
+
+=== TIPS ===
+- No mezclar más de 2 moods distintos
+- La iluminación es lo más importante: define el 60% del resultado
+- Ser específico en el sujeto: "sleek black watch with micro scratches" >> "cool watch"
+- 8 componentes llenos > 20 adjetivos vagos

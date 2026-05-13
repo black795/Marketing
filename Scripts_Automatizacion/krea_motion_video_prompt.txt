@@ -1,0 +1,6 @@
+# Propósito: Prompt del Nodo 2 en Krea — anima el personaje 3D con movimiento de motion design
+# Origen: AI Motion Design System — Claude Code + Krea
+# API Keys necesarias: KREA_API_KEY
+# Cómo usar: Colocar en el nodo image-to-video dentro del workflow de Krea
+
+smooth motion design movement, elastic easing curves, gentle bounce and rotation, glossy 3D character floating in pure white void, clean studio lighting, locked camera

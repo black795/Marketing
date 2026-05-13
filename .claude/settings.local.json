@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Bash(claude mcp *)",
+      "PowerShell(claude mcp *)",
+      "mcp__claude_ai_Notion__notion-search",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Bash(Get-ChildItem -Recurse -Directory \"Cursos_IA_Automatizacion\",\"Scripts_Automatizacion\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Recurse \"C:\\\\Users\\\\Windows 11 Pro\\\\Documents\\\\Tim Koda Skills\" | Where-Object {!$_.PSIsContainer} | Measure-Object | Select-Object -ExpandProperty Count)"
+    ]
+  }
+}

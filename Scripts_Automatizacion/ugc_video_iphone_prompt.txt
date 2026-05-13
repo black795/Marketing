@@ -1,0 +1,14 @@
+# Propósito: Prompt para animar actor UGC en video con estilo cámara frontal iPhone (Kling/Higgsfield)
+# Origen: 5 Consistent UGC Actors — con Nano Banana 2
+# API Keys necesarias: Ninguna (Kling 3.0 o Higgsfield)
+# Cómo usar: Usar la foto del personaje generada como imagen de referencia; pegar prompt en Kling o Higgsfield
+
+iPhone front camera video, [CHARACTER] holding phone while [ACTION], shaky handheld movement, auto-focus hunting then locking, visible iPhone noise and compression, [ENVIRONMENT], raw unedited UGC footage, vertical 9:16.
+
+=== VARIABLES A REEMPLAZAR ===
+[CHARACTER]   — descripción del actor (ej: "young Latina woman in white t-shirt")
+[ACTION]      — lo que hace (ej: "talking to the camera about her skincare routine" / "unboxing a package" / "reacting to something surprising")
+[ENVIRONMENT] — dónde está (ej: "in a bright bathroom" / "in a car" / "in a bedroom with fairy lights")
+
+=== EJEMPLO COMPLETO ===
+iPhone front camera video, young Latina woman in white t-shirt holding phone while talking to the camera about her skincare routine, shaky handheld movement, auto-focus hunting then locking, visible iPhone noise and compression, in a bright bathroom with natural light, raw unedited UGC footage, vertical 9:16.

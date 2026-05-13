@@ -1,0 +1,11 @@
+# Propósito: Prompt para generar foto de referencia de personaje UGC consistente (selfie de iPhone)
+# Origen: 5 Consistent UGC Actors — con Nano Banana 2
+# API Keys necesarias: Ninguna (Nano Banana 2 en InVideo o Freepik)
+# Cómo usar: Pegar en Nano Banana 2 reemplazando [CHARACTER DESCRIPTION]; esta foto se usa como referencia de personaje
+
+Generate a natural iPhone selfie portrait of [CHARACTER DESCRIPTION]. Neutral background, soft natural lighting, casual expression, photorealistic, UGC aesthetic. This is a character reference photo — maximize facial detail and natural skin texture. No filters, no retouching, authentic candid feel.
+
+=== EJEMPLOS DE [CHARACTER DESCRIPTION] ===
+- "25-year-old Latina woman with curly dark hair, warm olive skin, brown eyes, casual white t-shirt"
+- "30-year-old Black man with short fade haircut, confident expression, grey hoodie"
+- "22-year-old Asian woman with straight black hair, minimal makeup, athletic look, sports bra"

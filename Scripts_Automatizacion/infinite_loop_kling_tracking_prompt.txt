@@ -1,0 +1,15 @@
+# Propósito: Prompt de tracking shot para Kling 2.5 — usar IDÉNTICO para cada clip del Infinite Loop
+# Origen: Infinite Loop Effect Guide
+# API Keys necesarias: Ninguna (Kling 2.5 — Image to Video)
+# Cómo usar: Kling 2.5 → Image to Video → Duration: 5s → Motion: Medium → Camera motion: Left tracking → Prompt adherence: High → pegar este prompt
+
+Smooth continuous left-to-right camera tracking shot. Camera dollies steadily from right to left at constant speed. The model remains centered in frame throughout. Natural subtle movement — slight hair movement, gentle breathing, minimal pose shift. Maintain consistent lighting and background throughout. No camera shake, no zoom, no tilt. Cinematic motion, photorealistic.
+
+=== SETTINGS DE KLING 2.5 ===
+Mode: Image to Video
+Duration: 5 seconds
+Motion: Medium
+Camera motion: Left tracking
+Prompt adherence: High
+
+NOTA: Usar el MISMO prompt y los MISMOS settings para TODOS los clips. La velocidad consistente es el truco del loop.

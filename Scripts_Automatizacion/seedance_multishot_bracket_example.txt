@@ -1,0 +1,22 @@
+# Propósito: Ejemplo completo de generación multi-plano con bracket syntax de Seedance 2.0
+# Origen: Seedance 2.0 Master Guide
+# API Keys necesarias: Ninguna (acceso vía OpenArt)
+# Cómo usar: Adaptar los brackets con tu personaje y escena; mantener STYLE y CONSTRAINTS fuera de los brackets
+
+=== REGLAS DEL BRACKET SYNTAX ===
+- Cada bracket = UN plano con UN movimiento de cámara
+- Referenciar el mismo personaje entre planos: "the same male traceur", "Same dancer"
+- Duración total: 6-15 segundos en todos los planos
+- Máximo 5 planos por generación (3 es el sweet spot)
+- SIEMPRE terminar con STYLE y CONSTRAINTS GLOBALES FUERA de los brackets
+- Nunca mezclar movimientos de cámara dentro de un mismo bracket
+
+=== EJEMPLO VERIFICADO (3 planos — funcionando) ===
+
+[Shot 1, 3 seconds: A young male traceur in cargo pants and white tee sprints across a Parisian zinc rooftop toward the camera with intense focused expression. Handheld camera tracking him at chest level. Wind whistles past.]
+
+[Shot 2, 3 seconds: Same traceur leaps between two Haussmann buildings in dramatic slow motion, body fully extended, sun behind him creating sharp silhouette. Locked-off side angle camera at the same height.]
+
+[Shot 3, 2 seconds: Tight close-up, he lands and grips the zinc edge of the opposite rooftop, looks into the camera and says "And here's everything you need to master it" with explosive charged voice. Intense fast dolly in pushing toward his determined eyes.]
+
+Editorial fashion action sport, cinematic 35mm film, warm golden grading. Distant Eiffel Tower visible in the haze. Identity stays locked on reference face across all three shots, character consistency maintained, sharp focus throughout, natural anatomy.

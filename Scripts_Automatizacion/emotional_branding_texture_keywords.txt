@@ -1,0 +1,31 @@
+# Propósito: Biblioteca de keywords de textura para que los assets de marca parezcan hechos a mano (no IA)
+# Origen: The Emotional Branding System
+# API Keys necesarias: Ninguna
+# Cómo usar: Añadir 3-5 de estas keywords a los prompts de generación de assets de marca
+
+=== TEXTURAS ORGÁNICAS ===
+chalk texture
+ink bleed
+paper grain
+watercolor edges
+charcoal smudge
+pencil sketch lines
+
+=== MATERIALES ===
+kraft paper
+linen texture
+canvas weave
+screen print halftone
+letterpress impression
+rubber stamp
+
+=== IMPERFECCIONES ===
+rough edges
+uneven lines
+hand-drawn feel
+slightly off-center
+natural irregularity
+organic shapes
+
+=== CÓMO COMBINAR (ejemplo) ===
+Logo on kraft paper background, chalk texture, hand-drawn feel, slight ink bleed on edges, screen print halftone dots

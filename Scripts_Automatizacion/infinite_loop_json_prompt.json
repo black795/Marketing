@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "proposito": "JSON prompt para generar imagen base del Infinite Loop Effect — bloquea todos los parámetros visuales para que las transiciones sean invisibles",
+    "origen": "Infinite Loop Effect Guide",
+    "api_keys": "Ninguna (usar en InVideo con modelo Nano Banana)",
+    "como_usar": "Abrir InVideo, seleccionar Nano Banana como modelo, pegar el campo 'prompt' en el campo de generación. Para variaciones: cambiar solo wardrobe_props manteniendo todo lo demás igual"
+  },
+  "type": "image",
+  "version": "1.0",
+  "prompt": "Minimal high-key studio fashion photograph on a seamless white infinity background. A single female model with shoulder-length blonde hair sits centered on a simple chair with black metal legs and a light wood seat. She wears a sleeveless beige/nude shift dress and flat sandals. Legs crossed, head slightly down, hands opening or looking into a large metallic silver pleated slouch bag resting on her lap. Calm, quiet luxury mood, lots of negative space, clean editorial styling, subtle soft floor reflection and faint shadow under chair, photorealistic, contemporary fashion campaign still.",
+  "negative_prompt": "busy background, props, multiple people, harsh shadows, dramatic colored lighting, clutter, text, watermark, logo, lowres, blurry, out of focus, overprocessed skin, exaggerated makeup, distorted anatomy, extra fingers, warped hands, duplicate limbs, cropped head, crop at knees, motion blur, noisy, grainy, vignette",
+  "composition": {
+    "framing": "full_body",
+    "subject_placement": "centered",
+    "camera_height": "eye_level_to_slightly_high",
+    "negative_space": "very_high",
+    "background": "white_infinity_cyc"
+  },
+  "camera": {
+    "sensor_format": "full_frame",
+    "lens_mm": 70,
+    "aperture": "f/4",
+    "shutter": "1/125",
+    "iso": 100,
+    "focus": "hands_bag_and_face",
+    "perspective": "compressed_portrait"
+  },
+  "lighting": {
+    "setup": "high_key_studio_softboxes",
+    "key_light": "large_softbox_front_above",
+    "fill": "even_white_bounce_all_sides",
+    "background": "overlit_seamless_clean_white",
+    "shadow": "soft_minimal",
+    "contrast": "low"
+  },
+  "color_grade": {
+    "palette": ["clean_white", "warm_beige", "silver_metallic", "natural_skin_tones"],
+    "tone": "neutral",
+    "saturation": "low_to_moderate",
+    "look": "modern_minimal_editorial"
+  },
+  "wardrobe_props": {
+    "wardrobe": ["sleeveless_beige_shift_dress", "flat_sandals"],
+    "props": ["large_metallic_silver_pleated_slouch_bag", "simple_chair_black_metal_legs_wood_seat"]
+  },
+  "render_settings": {
+    "style": "photorealistic_editorial",
+    "detail_level": "high",
+    "dynamic_range": "high",
+    "skin_texture": "natural",
+    "fabric_detail": "subtle"
+  },
+  "output": {
+    "aspect_ratio": "9:16",
+    "resolution": "2048x3640"
+  },
+  "generation": {
+    "model_hint": "photo_real_v5",
+    "steps": 30,
+    "cfg": 6.0,
+    "seed": 90417322
+  }
+}

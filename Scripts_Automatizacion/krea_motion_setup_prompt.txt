@@ -1,0 +1,31 @@
+# Propósito: Prompt para Claude Code que genera automáticamente el script Python de integración con Krea API
+# Origen: AI Motion Design System — Claude Code + Krea
+# API Keys necesarias: KREA_API_KEY (obtener en krea.ai/settings/api-tokens)
+# Cómo usar: Pegar en Claude Code dentro del proyecto donde quieres el script; reemplazar <YOUR_VERSION_ID>
+
+Setup the Krea API integration in this project.
+
+Create scripts/krea/run-workflow.py that:
+
+1. Uploads a local image to Krea assets:
+   POST https://api.krea.ai/assets
+   Headers: Authorization: Bearer <KREA_API_KEY>
+   Body: multipart/form-data with file (PNG/JPG/WEBP, max 75MB)
+   Response: { id, image_url, ... }
+
+2. Triggers your Node App:
+   POST https://api.krea.ai/node-apps/<YOUR_VERSION_ID>/execute
+   Headers: Authorization: Bearer <KREA_API_KEY>, Content-Type: application/json
+   Body: { "imagenode": "<image_url from step 1>" }
+   Response: [{ job_id, status, ... }]   <- list, not dict
+
+3. Polls the job every 3 seconds until terminal state:
+   GET https://api.krea.ai/jobs/{job_id}
+   Statuses: backlogged -> queued -> processing -> sampling -> completed
+   When completed, result.urls is { output_name: url }
+
+4. Downloads each output URL into outputs/
+   Naming: {job_id_short}-{output_name}.{ext}
+
+Add nice progress output with emojis. Run with:
+python scripts/krea/run-workflow.py --image path/to/portrait.png

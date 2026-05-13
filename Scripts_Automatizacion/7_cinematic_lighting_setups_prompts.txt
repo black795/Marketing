@@ -1,0 +1,32 @@
+# Propósito: 7 prompts completos de iluminación cinematográfica — cada uno produce una emoción distinta
+# Origen: 7 Cinematic Lighting Setups
+# API Keys necesarias: Ninguna
+# Cómo usar: Copiar el prompt del setup deseado; reemplazar el sujeto/entorno manteniendo las specs de iluminación
+
+=== 1. GOLDEN HOUR — Warm, romantic, aspirational ===
+Fashion portrait photography, golden hour lighting, warm soft glow, sun-kissed natural light, outdoor garden setting with blooming flowers and trees, woman in elegant black outfit with sheer sleeves and wide-brim hat, standing on stone pathway, natural pose touching hat, warm color temperature, soft shadows, cinematic depth, shot on ARRI Alexa with 50mm lens, f/2.8, dreamy atmospheric quality, editorial fashion aesthetic
+
+=== 2. LOW KEY — Dramatic, mysterious, intense ===
+Dramatic low-key portrait, woman standing on elevated rock formation at dusk, orange sequined evening gown catching last light, deep blue gradient sky background, low-key lighting with dark shadows, subject silhouetted against twilight, high contrast, cinematic composition, shot on RED Komodo with 85mm lens, f/2.0, moody atmospheric depth, editorial fashion photography style
+
+=== 3. SPOTLIGHT — Theatrical, focused, powerful ===
+Theatrical spotlight portrait, single dramatic beam of light from above, woman standing in complete darkness, light cutting through atmospheric haze and dust particles, volumetric lighting effect, side profile pose looking up toward light source, black outfit, moody cinematic atmosphere, shot on Sony A7S III with 35mm lens, f/1.4, high contrast, stage lighting aesthetic, dramatic chiaroscuro effect
+
+=== 4. CHIAROSCURO — Classical, artistic, Renaissance-inspired ===
+Chiaroscuro portrait photography, dramatic side lighting creating strong contrast, woman sitting in natural outdoor setting with ferns and foliage, white slip dress, hand raised to forehead in contemplative pose, Rembrandt-style lighting, deep shadows balanced with highlights, dark moody background, classical painting aesthetic, shot on Canon R5 with 50mm lens, f/2.2, Renaissance-inspired lighting, artistic editorial style
+
+=== 5. CUTTER LIGHTS — Edgy, bold, graphic, modern ===
+Fashion portrait with cutter light effects, horizontal venetian blind shadows creating striped pattern across face, woman in black outfit with chain necklace, hands framing face, warm orange and black color scheme, graphic lighting design, hard-edged shadows, bold editorial aesthetic, red background, shot on Phase One XF with 80mm lens, f/2.8, high-fashion lighting, striking visual contrast
+
+=== 6. HARD FLASH PHOTOGRAPHY — Raw, authentic, paparazzi ===
+Hard flash street fashion photography, woman in red sequined dress walking at night, direct on-camera flash creating sharp shadows on pavement, urban setting with glass windows reflecting scene, black sunglasses and heels, confident walking pose, paparazzi aesthetic, harsh lighting, high contrast, raw authentic energy, shot with Canon 5D Mark IV and Speedlite 600EX, f/4, street photography style, candid fashion moment
+
+=== 7. SILHOUETTE — Mysterious, dramatic, minimalist ===
+Silhouette portrait photography, woman in complete silhouette against vibrant red background, side profile, hand raised to lips in elegant gesture, no visible facial details, pure black figure against red, high contrast, minimalist composition, dramatic backlighting, mysterious aesthetic, shot on Leica M11 with 50mm Summilux lens, f/1.4, editorial fashion silhouette, iconic graphic composition
+
+=== INSTRUCCIONES DE PERSONALIZACIÓN ===
+1. Copiar el prompt del setup deseado
+2. Reemplazar el sujeto (género, ropa, pose) con tu sujeto
+3. Ajustar el entorno si es necesario
+4. MANTENER INTACTAS las specs de iluminación, cámara y lente
+5. Generar en Midjourney, Flux, Recraft V4 o Gemini

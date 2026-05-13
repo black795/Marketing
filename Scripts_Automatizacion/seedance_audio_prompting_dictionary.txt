@@ -1,0 +1,26 @@
+# Propósito: Diccionario de prompting de audio para Seedance 2.0 — voz, SFX, música, acústica
+# Origen: Seedance 2.0 Master Guide
+# API Keys necesarias: Ninguna
+# Cómo usar: Añadir líneas de estas categorías directamente en el prompt de Seedance (en la capa de STYLE/CONSTRAINTS)
+
+=== VOZ (EMOCIÓN) ===
+speaks with explosive enthusiastic attitude
+voice is loud, charged, electric, like she just discovered something insane
+calm grounded voice, almost a whisper
+confident smirk in his voice, like dropping a final truth
+
+=== EFECTOS DE SONIDO (SFX) ===
+wind whistling loudly past the camera
+footsteps echoing on metal rooftops
+waves crashing violently against the rocks
+fabric rustling, breath catching
+
+=== MÚSICA (MOOD) ===
+tense orchestral score building
+upbeat electronic beat with synths
+somber piano notes drifting
+
+=== ACÚSTICA ===
+reverb in large empty space
+crisp close-mic vocal
+echo bouncing off cathedral walls

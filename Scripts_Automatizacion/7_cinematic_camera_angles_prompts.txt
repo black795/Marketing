@@ -1,0 +1,25 @@
+# Propósito: 7 prompts de ángulos cinematográficos de cámara listos para usar en generadores IA
+# Origen: 7 Cinematic Camera Angles — Complete Prompt Guide
+# API Keys necesarias: Ninguna
+# Cómo usar: Copiar el prompt deseado y reemplazar el sujeto/entorno; mantener el ángulo de cámara intacto
+
+=== 1. VIGNETTE EFFECT ===
+[Tu sujeto y entorno], dramatic vignette effect, dark edges gradually fading to black, sharp focus on central subject, high contrast center, cinematic lens vignette, editorial photography
+
+=== 2. TOP DOWN ===
+Overhead top-down shot, [Tu sujeto], perfectly centered aerial composition, flat lay perspective, directly above looking straight down, symmetrical arrangement, high-angle 90 degrees, minimalist graphic composition, studio lighting
+
+=== 3. FISHEYE ULTRA-WIDE ===
+Extreme fisheye ultra-wide angle lens, [Tu sujeto y entorno], dramatic barrel distortion, 180-degree field of view, curved horizon line, immersive perspective, dynamic visual impact, wide-angle distortion
+
+=== 4. HIGH ANGLE ===
+High angle shot looking down at [Tu sujeto], above eye level, shot on RED Komodo with 24mm lens, subject appears smaller and vulnerable, diminished perspective, authoritative viewpoint looking down, cinematic composition
+
+=== 5. BIRD'S EYE VIEW ===
+Bird's eye view aerial perspective, looking straight down at [Tu sujeto en entorno], drone-like overhead angle, complete environmental context visible, graphic top-down composition, 90-degree downward angle
+
+=== 6. INSIDE THE BAG POV ===
+Point of view from inside a bag looking up, [Manos/persona abriendo la bolsa], fisheye wide-angle from bag interior, surrounding bag materials visible at edges, dramatic perspective from inside object, unique POV shot
+
+=== 7. INSIDE THE BOX POV ===
+Point of view from inside a box looking up, [Manos/persona abriendo la caja], dramatic upward angle from box interior, box sides visible at frame edges, unboxing POV perspective, wide-angle inside container view

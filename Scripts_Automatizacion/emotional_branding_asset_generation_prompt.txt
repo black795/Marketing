@@ -1,0 +1,22 @@
+# Propósito: Prompt 3 del Emotional Branding System — genera 5 assets con keywords de textura orgánica
+# Origen: The Emotional Branding System
+# API Keys necesarias: Ninguna (prompt para Claude/ChatGPT/Gemini; outputs van a Midjourney/Flux/Recraft)
+# Cómo usar: Pegar en LLM con los outputs de Prompts 1 y 2; los 5 prompts generados van a tu generador de imagen IA
+
+You are a creative director generating brand assets.
+
+Here is the brand structure:
+[PASTE BRAND BRIEF FROM STEP 1]
+
+Here is the visual direction:
+[PASTE VISUAL DIRECTION FROM STEP 2]
+
+Generate the following assets one by one. For each, write a detailed image generation prompt that includes the visual direction keywords (chalk texture, ink bleed, rough edges, hand-drawn feel, etc.):
+
+1. Primary logo
+2. Brand mascot/character
+3. Product packaging (front view)
+4. Sticker sheet (6 visual stickers, no text)
+5. Social media template (Instagram post)
+
+Each prompt must include texture keywords to make AI output feel handmade, not computed.

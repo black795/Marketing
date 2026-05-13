@@ -1,0 +1,28 @@
+# Propósito: 8 prompts de motion design para Kling/Seedance — cada uno es un movimiento en loop perfecto
+# Origen: AI Motion Design System — Claude Code + Krea
+# API Keys necesarias: Ninguna (para Kling/Seedance directamente)
+# Cómo usar: Pegar el prompt deseado en Kling 3.0 o Seedance 2.0 con la imagen del personaje como referencia
+
+=== 1. BOUNCE (pulse scale) ===
+A glossy 3D vinyl toy character head centered in frame in a pure white infinite void. The head pulses with smooth elastic scale animation, growing slightly bigger over one second then shrinking back over one second. Seamless perfect loop. Sharp focus.
+
+=== 2. EASE IN/OUT CAMERA ===
+The head eases forward toward camera over one second then smoothly returns to its original position over one second. Seamless perfect loop. Never fills more than half the frame.
+
+=== 3. PENDULUM SWING ===
+The head swings to the right over one second then swings back to center over one second. Smooth deceleration at each end. Seamless perfect loop.
+
+=== 4. SPIN SNAP ===
+The head does a smooth 360 spin rotation over one second then holds still at original position for one second. Seamless perfect loop.
+
+=== 5. TILT NO-NO ===
+The head tilts to the right over one second then tilts back to center over one second. Smooth elastic easing. Seamless perfect loop.
+
+=== 6. SURPRISE (look up) ===
+The head suddenly snaps upward looking above with wide open eyes and mouth dropping open in exaggerated cartoon surprise. Squash and stretch on the reaction. Settles back with elastic easing. Pixar style.
+
+=== 7. WINK CHARMER ===
+The head slowly rotates with smooth easing then suddenly winks at the camera with a cheeky confident smile. Soft elastic bounce after the wink. Glossy reflections.
+
+=== 8. BUBBLEGUM POP ===
+The head blows a huge bright pink bubblegum bubble that grows bigger and bigger with satisfying elastic animation. The bubble pops and splashes on the face. Wide eyes shock reaction. Pixar style squash and stretch.

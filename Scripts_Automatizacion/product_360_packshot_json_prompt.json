@@ -1,0 +1,159 @@
+{
+  "_meta": {
+    "proposito": "JSON prompt para Gemini 2.5 Flash Image — genera 24 vistas turntable del producto + product sheet 6x4",
+    "origen": "How to Handle Impossible Product Shots",
+    "api_keys": "Google AI API key (GOOGLE_API_KEY) — o usar directamente en Gemini con Google AI Studio",
+    "como_usar": "Reemplazar PRODUCT_REF_1 con imagen del producto (frontal, fondo limpio); reemplazar PRODUCT_URL_OPTIONAL con URL de la página oficial del producto; reemplazar PRODUCT_NAME_AND_MODEL con el nombre exacto"
+  },
+  "model": "gemini-2.5-flash-image",
+  "task_type": "editing",
+  "priority": {
+    "primary": "Create an ultra-consistent 360° packshot of the same product (product consistency) plus a ready-to-use e-commerce '360° product sheet'.",
+    "secondary": "Rely on reliable online information (exact product name, materials, official colors, design details) to avoid any shape or branding errors."
+  },
+  "parameters": {
+    "task": "sequential_edit",
+    "input_requirements": {
+      "reference_images": [
+        {
+          "id": "PRODUCT_REF_1",
+          "role": "main_reference_image",
+          "notes": "Cleanest possible photo, main front view of the product, good studio-like lighting."
+        }
+      ],
+      "optional_inputs": [
+        {
+          "type": "url",
+          "value": "PRODUCT_URL_OPTIONAL",
+          "notes": "Official product page or manufacturer link if available."
+        },
+        {
+          "type": "text",
+          "value": "PRODUCT_NAME_AND_MODEL",
+          "notes": "Example: 'Sony WH-1000XM5 Black' / 'Dyson Airwrap Complete Long Nickel/Copper'."
+        }
+      ]
+    },
+    "web_research": {
+      "enabled": true,
+      "research_goals": [
+        "Identify the exact product name and model/reference",
+        "Verify overall silhouette, proportions, textures (matte/plastic/metal/glass), logo/typography and placement",
+        "Confirm official colors, finishes, and relevant variants (do NOT mix variants)",
+        "Collect 3-5 reliable reference images (manufacturer, major retailers, trusted reviews) strictly for visual validation"
+      ],
+      "source_priority": ["official_manufacturer_site", "official_documentation", "major_retailers", "trusted_reviews"],
+      "constraints": {
+        "no_unverified_details": true,
+        "no_logo_invention": true,
+        "no_feature_hallucination": true
+      }
+    },
+    "consistency_lock": {
+      "mode": "product_lock",
+      "preserve": ["silhouette", "proportions", "design_details", "logo_and_typography_placement", "materials_and_textures", "colors_and_finishes"],
+      "allow_changes": ["object_rotation_only", "minor_reflection_adjustments_for_consistency", "drop_shadow", "minimal_perspective_adjustment_if_needed_for_turntable"],
+      "strictness": 0.92
+    },
+    "render_setup": {
+      "environment": {
+        "background": "pure_white",
+        "surface": "slightly_neutral_light_gray",
+        "shadow": "soft_realistic_shadow_under_product",
+        "reflection": "optional_very_subtle_reflection_10_percent"
+      },
+      "lighting": {
+        "type": "studio_softbox",
+        "quality": "diffused",
+        "direction": "three_point_lighting",
+        "notes": "Clean e-commerce look, no dramatic contrast."
+      },
+      "camera": {
+        "angle": "eye_level_or_slight_high",
+        "lens": "normal_50mm_equivalent",
+        "distortion": "minimal",
+        "framing": "centered_with_consistent_padding"
+      }
+    },
+    "transformations": [
+      {
+        "step": 1,
+        "action": "Clean the reference image: remove dust/imperfections, correct white balance, unify pure white background, keep the product unchanged.",
+        "validate": "Product matches the reference exactly, crisp edges, uniform white background, soft realistic shadow."
+      },
+      {
+        "step": 2,
+        "action": "Generate a 360° turntable sequence: create 24 views (same exact product) at 15° increments around the vertical axis (0° to 345°). Product stays centered, same scale, same horizon, same shadow.",
+        "validate": "Between frames, only rotation changes. No drift in shape, color, logo, or texture. Perfect consistency."
+      },
+      {
+        "step": 3,
+        "action": "Assemble a '360° product sheet' (contact sheet) on white background: 6x4 grid (24 frames) with even margins. Add minimal header: product name + model + official color (web-verified only).",
+        "validate": "Clean e-commerce-ready sheet, perfect alignment, no invented information."
+      }
+    ],
+    "batch": {
+      "mode": "angle_sweep",
+      "iterations": [
+        {
+          "variable": "rotation_degrees",
+          "values": [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345]
+        }
+      ]
+    }
+  },
+  "constraints": {
+    "brand_safety": {
+      "no_fake_branding": true,
+      "no_wrong_model_mix": true
+    },
+    "image_integrity": {
+      "no_shape_drift": true,
+      "no_texture_drift": true,
+      "no_color_shift": true,
+      "no_logo_movement": true
+    },
+    "composition": {
+      "consistent_scale": true,
+      "consistent_centering": true,
+      "consistent_shadow_style": true,
+      "uniform_white_background": true
+    }
+  },
+  "output_specs": {
+    "deliverables": [
+      {
+        "name": "turntable_frames",
+        "format": "png",
+        "background": "solid_white",
+        "count": 24,
+        "naming": "PRODUCTNAME_MODEL_COLOR_###deg.png"
+      },
+      {
+        "name": "product_sheet_360",
+        "format": "png",
+        "layout": "grid_6x4",
+        "labels": {
+          "header": "product_name_model_color_official",
+          "frame_labels": "optional_degrees_small"
+        }
+      }
+    ],
+    "quality": {
+      "resolution": "4k",
+      "sharpness": "high",
+      "compression": "lossless_or_minimal"
+    },
+    "aspect_ratio": {
+      "frames": "1:1",
+      "sheet": "4:3"
+    },
+    "success_criteria": [
+      "24 perfectly consistent frames with no product identity drift",
+      "Clean, uniform white background across all images",
+      "Consistent, realistic shadows",
+      "Crisp, aligned, e-commerce-ready 360° sheet",
+      "Product name/model/color included only if web-verified (omit otherwise)"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+# Propósito: Framework completo de Visual Intent en 3 pasos — definir ANTES de escribir el prompt
+# Origen: Master Visual Intent — The Quick Framework
+# API Keys necesarias: Ninguna
+# Cómo usar: Completar los 3 pasos en orden; el resultado es un brief visual completo listo para escribir el prompt final
+
+=== PASO 1: DEFINE EL FEELING ===
+Emoción:  Awe / Calm / Excitement / Tension / Joy / Wonder / [tu emoción]
+Mood:     Ethereal / Gritty / Luxurious / Playful / Futuristic / Minimalist / [tu mood]
+Quick test: "Si esta imagen fuera música, ¿qué género sería?"
+
+=== PASO 2: ENCUENTRA REFERENCIAS (sin copiar — extrae la esencia) ===
+Películas: [ej: Blade Runner → neon cyberpunk / Wes Anderson → pasteles simétricos]
+Arte:      [ej: Rembrandt → luz dramática / Bauhaus → simplicidad limpia]
+Diseño:    [ej: Art Deco → grandeza / Minimalismo → espacio negativo]
+Pregunta:  "¿Qué lenguaje visual coincide con mi feeling?"
+
+=== PASO 3: DESGLOSA LOS ELEMENTOS ===
+
+COLOR:
+- Dominante: [color principal]
+- Tono: warm / cool / muted / vibrant
+- Regla: Luxury = jewel tones / Tech = cool blues / Natural = earth tones
+
+LIGHTING:
+- Tipo: Hard / Soft / Diffused
+- Fuente: Golden hour / Studio / Neon / Natural window
+- Regla: Premium = soft window light / Dramatic = hard shadows
+
+COMPOSITION:
+- Layout: Symmetrical / Asymmetrical / Centered
+- Ángulo: Eye-level / Low (power) / High (vulnerable)
+- Regla: Editorial = dynamic angles / Luxury = centered symmetry
+
+TEXTURE:
+- Feel: Smooth / Rough / Glossy / Matte
+- Regla: Tech = sleek glass / Natural = rough wood / Luxury = velvet
+
+SCALE:
+- Grand/Epic / Intimate/Human / Macro/Micro
+
+STYLE:
+- Photorealistic / Stylized / Painterly / Abstract
+
+=== BRAND FORMULAS PROBADAS ===
+Apple:  Minimal + clean whites + soft diffused light + centered + smooth textures
+Nike:   Dynamic + bold contrast + dramatic hard light + action angles + gritty
+Chanel: Luxury + monochrome + soft golden light + perfect symmetry + premium materials
+
+=== WORKFLOW COMPLETO ===
+1. Define feeling
+2. Elige referencias
+3. Desglosa los 6 elementos
+4. Escribe el brief visual
+5. ENTONCES escribe el prompt
+
+REGLA: Visual intent primero. Prompt después. Nunca al revés.

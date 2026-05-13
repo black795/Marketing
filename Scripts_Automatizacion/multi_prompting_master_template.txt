@@ -1,0 +1,39 @@
+# Propósito: Estructura de master prompt para mantener consistencia visual en generaciones multi-shot
+# Origen: MULTI PROMPTING SYSTEM
+# API Keys necesarias: Ninguna
+# Cómo usar: Completar el master prompt una vez; usarlo como prefijo o system prompt en todas las generaciones de la sesión
+
+=== MASTER PROMPT TEMPLATE ===
+
+VISUAL RULES FOR THIS SESSION:
+- Character: [descripción completa del personaje — edad, apariencia, ropa, rasgos distintivos]
+- Environment: [descripción del entorno base — locación, atmósfera, hora del día]
+- Lighting: [setup de iluminación específico — tipo, dirección, calidad]
+- Color palette: [colores dominantes y tono — warm/cool/muted]
+- Camera style: [estilo de fotografía — editorial, candid, fashion campaign]
+- Consistency rules: [qué debe mantenerse igual en todos los shots]
+
+SHOT LIST FOR THIS SESSION:
+1. [Shot 1: ángulo + acción específica]
+2. [Shot 2: ángulo + acción específica]
+3. [Shot 3: ángulo + acción específica]
+[continuar según necesidad]
+
+GENERATE [SHOT NUMBER]: [descripción específica del plano — referenciar los VISUAL RULES]
+
+=== EJEMPLO COMPLETO ===
+
+VISUAL RULES FOR THIS SESSION:
+- Character: Athletic 26-year-old woman, dark curly hair, olive skin, wearing fitted white crop top and high-waist black leggings, silver hoop earrings
+- Environment: Modern minimalist gym, floor-to-ceiling windows with city view, late afternoon light
+- Lighting: Golden hour natural light from windows, soft fill from gym lighting, warm tones
+- Color palette: White, black, warm gold accents, blurred city grey in background
+- Camera style: Editorial fitness campaign, clean and aspirational
+- Consistency rules: Same woman, same outfit, same gym, same lighting quality in every shot
+
+SHOT LIST:
+1. Close-up portrait, looking into camera, confident expression
+2. Full body, jumping mid-air, dynamic pose
+3. Seated on bench, checking phone, candid
+
+GENERATE SHOT 1: Close-up portrait of the character above, looking directly into camera with confident expression, same gym environment and lighting, editorial fitness campaign style

@@ -1,0 +1,15 @@
+# Propósito: Prompt para escenas UGC con múltiples actores IA (hasta 5 con Nano Banana 2)
+# Origen: 5 Consistent UGC Actors — con Nano Banana 2
+# API Keys necesarias: Ninguna (Nano Banana 2 con referencias de personaje cargadas)
+# Cómo usar: Cargar las fotos de referencia de cada personaje en Nano Banana 2; pegar prompt con referencias numeradas
+
+[SCENE DESCRIPTION] featuring Reference 1 as the main focus holding the phone, with Reference 2, Reference 3, Reference 4, and Reference 5. UGC aesthetic, [ANGLE TYPE]. Natural lighting, photorealistic, candid.
+
+=== INSTRUCCIONES ===
+- Reference 1 = personaje principal (más protagonismo)
+- References 2-5 = personajes secundarios en la escena
+- ANGLE TYPE: selfie angle / group shot / candid street / lifestyle
+- La foto de referencia de cada personaje se carga en los slots de Nano Banana 2
+
+=== EJEMPLO COMPLETO ===
+Friends laughing at brunch in a bright cafe featuring Reference 1 as the main focus holding the phone for the group selfie, with Reference 2, Reference 3 laughing in the background. UGC aesthetic, selfie angle. Natural window lighting, photorealistic, candid spontaneous moment.

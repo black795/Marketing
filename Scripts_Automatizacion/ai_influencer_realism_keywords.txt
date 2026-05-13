@@ -1,0 +1,30 @@
+# Propósito: Lista completa de keywords de realism para influencers IA + iPhone trick + keywords de candidez
+# Origen: AI Influencer Blueprint
+# API Keys necesarias: Ninguna
+# Cómo usar: Añadir 3-5 de estas keywords a los prompts de generación del personaje IA
+
+=== SKIN REALISM KEYWORDS ===
+visible pores
+peach fuzz
+subsurface skin scattering
+micro wrinkles
+natural skin imperfections
+freckles
+slight asymmetry
+natural under-eye shadows
+
+=== IPHONE TRICK ===
+Iniciar el prompt con: IMG_7291.HEIC
+→ El modelo asocia esto con un archivo real de iPhone y ajusta toda la imagen para parecer foto de teléfono
+
+=== CANDIDEZ Y AUTENTICIDAD ===
+slight grain from low light
+off-center composition, not perfectly framed
+caught mid-action, unposed, candid
+not retouched, natural skin texture
+Kodak Portra 400 color cast
+motion blur in background
+imperfect focus, slightly hunting
+
+=== USO COMBINADO (ejemplo) ===
+IMG_7291.HEIC, [CHARACTER DESCRIPTION], visible pores, peach fuzz, natural skin imperfections, caught mid-action, Kodak Portra 400 color cast, off-center composition

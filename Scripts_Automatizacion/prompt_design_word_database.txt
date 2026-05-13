@@ -1,0 +1,41 @@
+# Propósito: Base de datos de 200 palabras en 10 categorías para enriquecer prompts de imagen IA
+# Origen: Prompt Design Word Database
+# API Keys necesarias: Ninguna
+# Cómo usar: Seleccionar 4-8 keywords de distintas categorías; combinar en el prompt. Calidad > cantidad
+
+=== INSTRUCCIONES DE USO ===
+1. Empieza con tu sujeto (personaje, producto, entorno)
+2. Añade 1-2 palabras de Architecture & Space o Fashion
+3. Añade 1-2 de Lighting + Mood & Atmosphere
+4. Termina con 1-2 de Material/Texture + Pose/Character
+→ Meta: 4-8 keywords por prompt, no 40
+
+=== 1. ARCHITECTURE & SPACE (20) ===
+gothic architecture / renaissance symmetry / baroque grandeur / neoclassical columns / minimalist architecture / brutalist structure / futuristic skyline / parametric design / adaptive reuse / floating pavilion / monolithic facade / glass atrium / cantilevered volume / open floorplan / spiral staircase / cathedral-like space / urban courtyard / atrium lightwell / flying buttress / stained glass window
+
+=== 2. ART & ILLUSTRATION STYLE (20) ===
+renaissance painting / baroque drama / impressionist brushwork / cubist geometry / surreal dreamscape / abstract expressionism / pop art graphic / minimalist poster / concept art / fantasy illustration / watercolor wash / ink linework / digital vector art / halftone print / comic book style / graphic novel panel / etching texture / gouache matte / mixed media collage / monochrome study
+
+=== 3. FASHION & STYLING (20) ===
+high-fashion editorial / streetwear inspired / couture silhouette / avant-garde outfit / bohemian layering / tailored minimalism / athleisure styling / punk attitude / glamorous eveningwear / timeless classic look / runway-ready styling / capsule wardrobe / tone-on-tone outfit / statement accessory focus / layered textures / oversized proportions / structured tailoring / draped fabric / monochrome styling / color-blocked look
+
+=== 4. PHOTOGRAPHY & CAMERA (20) ===
+editorial photography / candid street shot / architectural photography / macro close-up / telephoto compression / wide-angle perspective / shallow depth of field / deep focus / film grain aesthetic / medium format look / polaroid snapshot / long exposure trail / handheld documentary style / tripod-stable frame / bokeh background / selective focus / over-the-shoulder shot / point-of-view camera / establishing shot / detail cutaway
+
+=== 5. LIGHTING (20) ===
+golden hour light / blue hour glow / soft diffused light / harsh midday sun / backlit silhouette / rim lighting / split lighting / Rembrandt lighting / low-key lighting / high-key lighting / neon-drenched lighting / volumetric rays / window light / dappled sunlight / candlelit ambience / practical lights / colored gels / specular highlights / soft box beauty light / hard shadow contrast
+
+=== 6. MOOD & ATMOSPHERE (20) ===
+serene atmosphere / euphoric energy / melancholic tone / mysterious mood / romantic tension / menacing ambience / whimsical vibe / ethereal feeling / gritty realism / surreal atmosphere / intimate moment / cinematic tension / dreamlike haze / nostalgic warmth / clinical coldness / playful chaos / contemplative silence / high-stakes drama / otherworldly calm / electric intensity
+
+=== 7. MATERIAL & TEXTURE (20) ===
+hyperrealistic skin texture / visible pores / peach fuzz glow / worn leather patina / brushed metal / frosted glass / porous volcanic stone / polished marble / raw concrete / weathered wood / delicate silk / heavy velvet / translucent plastic / crystalline glass / micro-scratches / fingerprint smudges / dust motes in the air / film grain and halation / condensation droplets / muddy ground
+
+=== 8. CHARACTER & FACE (20) ===
+distinct facial structure / almond-shaped eyes / hooded eyelids / sharp jawline / freckled skin / natural asymmetry / subtle eye bags / soft smile / brooding expression / joyful expression / concentrated gaze / side profile portrait / three-quarter portrait / close-up beauty shot / age-lined features / youthful features / piercing eye contact / averted gaze / neutral expression / micro-expression detail
+
+=== 9. POSE & BODY LANGUAGE (20) ===
+contrapposto stance / extended reach pose / floating suspension pose / dynamic stride / relaxed weight shift / power pose / vulnerable posture / elegant hand gesture / mid-motion capture / leaning against wall / seated casually / crossed arms / open chest posture / turned back pose / profile body turn / hands in pockets / jumping mid-air / running sprint / dancing movement / stillness and tension
+
+=== 10. CLOTHING & ACCESSORIES (20) ===
+oversized blazer / structured trench coat / pleated skirt / wide-leg trousers / cropped jacket / turtleneck sweater / flowing maxi dress / sharp tuxedo / statement boots / minimalist sneakers / delicate jewelry / bold sunglasses / leather handbag / silk scarf / layered necklaces / bucket hat / fingerless gloves / belted waist detail / textured tights / logo-free essentials

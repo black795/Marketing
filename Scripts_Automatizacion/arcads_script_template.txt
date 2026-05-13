@@ -1,0 +1,25 @@
+# Propósito: Plantilla de script de 25 segundos para anuncios UGC con Arcads AI (estructura de 4 partes)
+# Origen: AI UGC Agency Guide + Arcads AI Ultimate Guide
+# API Keys necesarias: ARCADS_API_KEY (para automatización)
+# Cómo usar: Rellenar cada sección con el contenido específico del producto/marca; entregar a Arcads AI
+
+=== ESTRUCTURA DE SCRIPT UGC (25 segundos) ===
+
+[0-3s HOOK]: "I wasted $200 on skincare before finding this."
+→ Reemplazar con: declaración que genera curiosidad, problema relatable, o afirmación sorprendente
+
+[3-15s VALUE]: "This serum cleared my skin in 2 weeks. The formula has [KEY INGREDIENT] that [SPECIFIC BENEFIT]."
+→ Reemplazar con: demostración del beneficio principal, específico y visual
+
+[15-20s PROOF]: "Look at my skin now — [VISUAL DEMONSTRATION]."
+→ Reemplazar con: before/after, testimonial real, resultado tangible mostrado visualmente
+
+[20-25s CTA]: "Link in bio, use code CLEAR20 for 20% off."
+→ Reemplazar con: oferta específica, urgencia, código de descuento
+
+=== 5 HOOK PATTERNS (rotar entre variaciones) ===
+1. Problem/Agitate/Solution: "Struggling with X? Most people do Y. Here's what actually works..."
+2. Social Proof: "50,000 people switched to [PRODUCT] last month. Here's why..."
+3. Curiosity Gap: "Nobody talks about this [PRODUCT] hack..."
+4. Before/After: "6 weeks ago my [PROBLEM]. Now [TRANSFORMATION]..."
+5. Direct CTA: "Stop scrolling. If you have [PROBLEM], watch this..."

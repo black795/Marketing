@@ -1,0 +1,6 @@
+# Propósito: Prompt para el Node Agent de Krea que construye el workflow de motion design 3D automáticamente
+# Origen: AI Motion Design System — Claude Code + Krea
+# API Keys necesarias: KREA_API_KEY
+# Cómo usar: Pegar en el Node Agent dentro de krea.ai/nodes; el agente ensambla todos los nodos
+
+Build a workflow that takes an input image, converts it into a glossy 3D vinyl toy character with a pure white background using image-to-image, then animates it with smooth motion design movements (bounce, rotation, elastic easing) using image-to-video. Output both the still image variation and the final motion video.

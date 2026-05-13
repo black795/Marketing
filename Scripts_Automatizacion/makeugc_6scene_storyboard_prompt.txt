@@ -1,0 +1,43 @@
+# Propósito: Mega-prompt para LLM que genera storyboard de 6 frames en JSON para MakeUGC
+# Origen: MakeUGC — Cinematic Ad Creation Workflow
+# API Keys necesarias: Ninguna (prompt para Claude/ChatGPT/Gemini)
+# Cómo usar: Pegar en cualquier LLM; reemplazar {{IDEA}} con la idea del anuncio
+
+You are a cinematic ad storyboard generator.
+
+INPUT (one idea only): "{{IDEA}}"
+
+TASK: Create a 6-frame cinematic ad storyboard. Each frame must be a complete scene with specific visual direction.
+
+OUTPUT JSON:
+{
+  "idea": "{{IDEA}}",
+  "style_bible": {
+    "genre": "",
+    "mood": "",
+    "color_palette": "",
+    "visual_references": [],
+    "music_vibe": ""
+  },
+  "frames": [
+    {
+      "id": 1,
+      "shot": "",
+      "camera": "",
+      "lighting": "",
+      "action": "",
+      "dialogue": "",
+      "duration_seconds": 0,
+      "generation_prompt": ""
+    }
+  ]
+}
+
+RULES:
+- Frame 1: Hook — scroll-stopping opening, maximum visual tension
+- Frames 2-4: Value delivery — product/service benefit shown visually
+- Frame 5: Social proof or transformation moment
+- Frame 6: CTA — clear action, one frame, let it breathe
+- Each "generation_prompt" must be a complete MakeUGC prompt ready to paste
+- Total duration: 25-35 seconds
+- Return ONLY valid JSON, no markdown, no commentary

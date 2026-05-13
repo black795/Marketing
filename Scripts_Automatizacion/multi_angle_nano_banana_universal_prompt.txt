@@ -1,0 +1,6 @@
+# Propósito: Prompt universal para Nano Banana Pro — genera grid 3x3 con 9 ángulos distintos del mismo modelo
+# Origen: MULTI-ANGLE WORKFLOW — De 1 imagen a 100+ shots profesionales
+# API Keys necesarias: Ninguna (Nano Banana Pro en InVideo o Freepik)
+# Cómo usar: Pegar en Nano Banana Pro junto con la imagen de referencia del sujeto
+
+Create a totally new 3x3 photo grid featuring the same model shown in nine distinct photographic compositions, maintaining perfect facial and body consistency. Each frame represents a new unique camera perspective: portrait close-up, mid-shot, full-body product shot, macro texture detail, low-angle dynamic pose, high-angle cinematic perspective, wide-angle lifestyle scene, ultra-wide environmental context, and over-the-shoulder narrative shot. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image.

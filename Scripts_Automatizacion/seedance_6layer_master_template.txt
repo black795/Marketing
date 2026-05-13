@@ -1,0 +1,31 @@
+# Propósito: Plantilla maestra de 6 capas para prompts de Seedance 2.0 — con ejemplo verificado y funcionando
+# Origen: Seedance 2.0 Master Guide
+# API Keys necesarias: Ninguna (acceso vía OpenArt)
+# Cómo usar: Seguir el orden exacto de las 6 capas; sustituir los corchetes con tu contenido
+
+=== TEMPLATE DE 6 CAPAS (orden obligatorio) ===
+
+[SUBJECT con rasgos visuales específicos]. [ACTION con verbos concretos y física]. [ENVIRONMENT con locación y mood de iluminación]. [CAMERA — UNA instrucción primaria en nivel específico]. [VOICE o cue de audio si habla]. [STYLE con referencias visuales]. [CONSTRAINTS como afirmaciones positivas].
+
+=== EJEMPLO VERIFICADO (funcionando) ===
+
+A young athletic male traceur in beige cargo pants and white oversized t-shirt lands hard on a Parisian zinc rooftop, hands violently gripping the edge, dust scattering, looks straight into the camera with intense determined eyes and says "And here's everything you need to master it" with an explosive charged voice. Golden hour sun creates a sharp rim light on his face. Distant Eiffel Tower silhouette glows in golden hour haze. Intense fast dolly in pushing aggressively toward his face during the line. Wind whistles loudly past the camera. Editorial action sport, cinematic 35mm film, warm golden grading. Sharp focus throughout, identity stays locked on reference face.
+
+=== DICCIONARIO DE CONSTRAINTS POSITIVOS ===
+❌ "no blur"              → ✅ "sharp focus throughout"
+❌ "no morphing"          → ✅ "identity stays locked across the entire shot"
+❌ "no distortion"        → ✅ "natural anatomy with properly formed limbs"
+❌ "no character drift"   → ✅ "character consistency maintained on the reference face"
+❌ "no fragmentation"     → ✅ "the subject stays perfectly intact as one solid body"
+
+=== PALABRAS QUE CAUSAN CAOS (EVITAR) ===
+- "fast" solo              → usar: "fast but controlled with smooth easing"
+- "cinematic" solo         → usar: "cinematic 35mm film look with warm golden grading"
+- "epic" / "amazing"       → usar descriptores visuales concretos
+- "lots of movement"       → describir UN movimiento específico
+- "dynamic" solo           → usar: "tracking shot following his movement"
+
+=== LONGITUD ===
+- 1 plano: 60-100 palabras
+- 3 planos: 150-200 palabras
+- Máximo absoluto: 200 palabras

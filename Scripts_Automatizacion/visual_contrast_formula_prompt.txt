@@ -1,0 +1,28 @@
+# Propósito: Estructura de prompt para crear colisiones visuales imposibles (scroll-stop) con Recraft V4
+# Origen: AI Creation Master Guide — 3 Skills para Contenido Que No Parece IA
+# API Keys necesarias: Ninguna (Recraft V4)
+# Cómo usar: Rellenar [SUBJECT], [IMPOSSIBLE WORLD], [LIGHTING]; generar Close-up Y Wide Reveal
+
+=== FÓRMULA DEL CONTRASTE VISUAL ===
+[Subject with full description] + [action] + [impossible environment] + [lighting that ties both worlds together] + [editorial photography style]
+
+=== ESTRUCTURA DEL PROMPT ===
+[SUBJECT: descripción completa y específica] [ACTION: qué está haciendo], in [IMPOSSIBLE WORLD: entorno absurdo sin relación con el sujeto], [LIGHTING: iluminación que conecta ambos mundos], editorial photography, photorealistic
+
+=== EJEMPLOS DE COLISIONES ===
+- Mountain biker at full speed → on a golf course
+- Boxer training punching bag → in a flower field
+- Software engineer coding → at a blackjack table in a casino
+- Chef plating fine dining → in a construction site
+
+=== PROMPT PARA CLOSE-UP (Versión 1) ===
+[SUBJECT], close-up that could be mistaken for the real thing, [LIGHTING], editorial photography, photorealistic, 85mm lens, shallow depth of field
+
+=== PROMPT PARA WIDE REVEAL (Versión 2) ===
+[SUBJECT] in [IMPOSSIBLE WORLD], wide establishing shot revealing the impossible context, same lighting as close-up, editorial photography, photorealistic, 24mm lens
+
+=== TIPS ===
+- El contraste debe ser VISUAL, no conceptual — no explicar, mostrar
+- La ropa del sujeto debe coincidir con el sujeto original, no con el mundo
+- Generar 2-3 variaciones y elegir la más fotorrealista
+- El lighting compartido entre sujeto y entorno es lo que hace que el cerebro lo acepte como real

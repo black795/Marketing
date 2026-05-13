@@ -1,0 +1,23 @@
+# Propósito: Template de brief de marca para darle a Emergent.sh — genera sitio Next.js completo con hosting
+# Origen: The Emergent Stack
+# API Keys necesarias: Cuenta en Emergent.sh (usa Claude Opus + GPT Image 2 internamente)
+# Cómo usar: Rellenar todos los campos y pegar en Emergent.sh como instrucción inicial del agente
+
+Brand: [Client name]
+Audience: [Who they are + what they want + what they fear]
+Positioning: [Value prop in one line that names the enemy]
+Key sections: [Hero, value props, pricing tiers, testimonials, FAQ, footer — list sections needed]
+Brand voice references: [3-5 brands they admire by name — ej: "Apple, Notion, Linear"]
+Mood: [ONE word: confident, soft, brutalist, playful, editorial, minimal, bold]
+NOT: [3 things the brand should never feel like — ej: "corporate, dated, generic"]
+Deliverable: full Next.js site ready to deploy on Emergent hosting
+
+=== EJEMPLO COMPLETO ===
+Brand: Nova Studio — AI content agency
+Audience: E-commerce founders who want premium content but can't afford a full creative team — they want results, not deliverables
+Positioning: The AI creative agency for brands that are done waiting on agencies
+Key sections: Hero (bold statement + CTA), Services (3 core offerings), Portfolio (6 case studies), Pricing (3 tiers), Testimonials (5 quotes), FAQ (7 questions), Footer
+Brand voice references: Linear, Loom, Figma
+Mood: confident
+NOT: corporate, cluttered, overly playful
+Deliverable: full Next.js site ready to deploy on Emergent hosting

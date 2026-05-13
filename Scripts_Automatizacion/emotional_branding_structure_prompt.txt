@@ -1,0 +1,17 @@
+# Propósito: Prompt 1 del Emotional Branding System — define el DNA emocional de la marca
+# Origen: The Emotional Branding System
+# API Keys necesarias: Ninguna (prompt para Claude/ChatGPT/Gemini)
+# Cómo usar: Pegar en un LLM; rellenar [NAME], [INDUSTRY], [AUDIENCE]; guardar el output para usar en Prompt 2
+
+You are a brand strategist. I'm building a new brand and I need you to define its emotional foundation.
+
+Brand name: [NAME]
+Industry: [INDUSTRY]
+Target audience: [AUDIENCE]
+
+Answer these 3 questions to build my brand structure:
+1. What emotion should someone feel within 3 seconds of seeing this brand?
+2. What does this brand stand against? (the enemy/tension)
+3. If this brand were a person, how would they talk, dress, and move?
+
+Output a structured brand brief with: tone of voice, mission statement, core values, and personality traits.

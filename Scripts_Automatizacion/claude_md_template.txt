@@ -1,0 +1,18 @@
+# Propósito: Plantilla de CLAUDE.md para configurar la identidad creativa de Tim Koda en Claude Code
+# Origen: The Koda Creative Stack
+# API Keys necesarias: Ninguna
+# Cómo usar: Copiar este contenido en un archivo llamado CLAUDE.md en la raíz de tu proyecto Claude Code
+
+## Voice
+- Tone: bold and direct, casual but knowledgeable
+- Language: English
+- Never say: "game-changing", "unleash", "dive in"
+
+## Visual Identity
+- Primary colors: #FF2D8A, #FFF466
+- Style: editorial, bright, human-centric
+
+## Content Format
+- Platform: Instagram Reels
+- Duration: 30-40 seconds
+- Structure: hook → walkthrough → CTA

@@ -1,0 +1,30 @@
+# Propósito: Estructura de prompt para replicar estética cinematográfica de película en TapNow AI
+# Origen: Cinematic Aesthetic Workflow — TapNow
+# API Keys necesarias: Ninguna (TapNow AI)
+# Cómo usar: Reemplazar [FILM], [COLOR PALETTE], [LIGHTING], [SET DESIGN], [COSTUME], [ANGLE] con los de tu película objetivo
+
+=== ESTRUCTURA DEL PROMPT ===
+Character in [COSTUME], [FILM] movie aesthetic, [COLOR PALETTE], [LIGHTING], [SET DESIGN], [ANGLE] framing, cinematic
+
+=== ESTÉTICAS POPULARES ===
+
+BARBIE:
+Character in pink outfit, Barbie movie aesthetic, saturated pastel palette, high-key lighting, dreamhouse interior, centered framing, cinematic
+
+BLADE RUNNER (cyberpunk):
+Character in dark urban outfit, Blade Runner aesthetic, neon-drenched blues and purples, rain-soaked streets, neon signs reflected on wet pavement, low angle heroic framing, cinematic
+
+WES ANDERSON:
+Character in pastel outfit, Wes Anderson aesthetic, symmetrical pastel palette, diffused natural light, ornate interior with props, perfectly centered symmetrical framing, cinematic
+
+OPPENHEIMER:
+Character in 1940s period costume, Oppenheimer aesthetic, desaturated warm tones, dramatic chiaroscuro lighting, historical interior setting, 3/4 portrait framing, cinematic
+
+MARVEL:
+Character in hero costume, Marvel blockbuster aesthetic, saturated epic palette, dramatic backlit hero lighting, destroyed urban environment, low angle power framing, cinematic
+
+=== TIPS ===
+- Incluir: nombre de película, paleta de colores, iluminación, diseño de set, vestuario, ángulo de cámara
+- NO mezclar estilos de películas diferentes
+- NO usar "cinematic" solo — ser específico sobre la película
+- Estudiar la cinematografía real de la película antes de promtear

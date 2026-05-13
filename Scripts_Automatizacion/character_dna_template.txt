@@ -1,0 +1,32 @@
+# Propósito: Plantilla completa de Character DNA para documentar y mantener consistencia de personajes IA
+# Origen: Character DNA System
+# API Keys necesarias: Ninguna
+# Cómo usar: Rellenar cada sección para tu personaje; el campo PROMPT combina todo en un párrafo listo para generadores
+
+===== PHYSICAL =====
+Height/Build:
+Skin:
+Face:
+Eyes:
+Hair:
+Distinctive:
+
+===== PERSONALITY =====
+Traits:
+Behavior:
+Quirks:
+
+===== VOICE =====
+Tone/Pitch/Rhythm:
+
+===== STYLE =====
+Clothing/Posture/Expression:
+
+===== PROMPT =====
+[Un párrafo que combina todos los atributos anteriores — usar este párrafo directamente en Midjourney, Flux, Seedance, Nano Banana, etc.]
+
+===== NOTAS DE USO =====
+- Guardar este archivo como [NOMBRE_PERSONAJE]_DNA.txt
+- Usar el párrafo PROMPT como prefijo en todas las generaciones del personaje
+- Para video: añadir "identity stays locked on reference face" al final del prompt
+- Para multi-personaje: crear un archivo DNA separado por cada personaje

@@ -1,0 +1,6 @@
+# Propósito: Prompt de imperfecciones orgánicas — añadir al final de cualquier generación para que no parezca IA
+# Origen: The Humanify System
+# API Keys necesarias: Ninguna
+# Cómo usar: Añadir este texto al FINAL de cualquier prompt de imagen IA (Midjourney, Flux, Recraft, Gemini, DALL-E)
+
+Add subtle film grain, natural noise, rough organic edges, slight lens imperfection, lived-in texture, imperfect lighting with natural falloff, human-crafted feel, not AI perfect, raw and authentic
