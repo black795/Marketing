@@ -16,9 +16,25 @@ export interface Scene {
   duration: number;
 }
 
-export interface GenerateStoryResponse {
-  success: boolean;
+export interface Character {
+  name: string;
+  description: string;
+}
+
+export interface GeneratedStory {
+  title: string;
+  style: string;
+  characters: Character[];
+  scenes: Scene[];
+}
+
+export interface GenerateStoryResponse extends GeneratedStory {
+  success: true;
   projectId: string;
   model: string;
-  scenes: Scene[];
+}
+
+export interface GenerateStoryErrorResponse {
+  success: false;
+  error: string;
 }

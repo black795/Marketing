@@ -1,12 +1,10 @@
 import { Router, Request, Response } from 'express';
-import type {
-  GenerateStoryRequest,
-  GenerateStoryResponse,
-} from '../types/story';
+import type { GenerateStoryRequest } from '../types/story';
+import { generateStoryFromPrompt } from '../services/claude/storyEngine';
 
 const router = Router();
 
-router.post('/generate-story', (req: Request, res: Response) => {
+router.post('/generate-story', async (req: Request, res: Response) => {
   const { prompt, storyGuide, model, referenceImage } =
     req.body as Partial<GenerateStoryRequest>;
 
@@ -24,17 +22,31 @@ router.post('/generate-story', (req: Request, res: Response) => {
     });
   }
 
-  void storyGuide;
-  void referenceImage;
+  const projectId = `proj-${Date.now()}`;
 
-  const response: GenerateStoryResponse = {
-    success: true,
-    projectId: `test-${Date.now()}`,
-    model,
-    scenes: [],
-  };
+  try {
+    const story = await generateStoryFromPrompt({
+      prompt,
+      storyGuide,
+      model,
+      referenceImage,
+    });
 
-  return res.status(200).json(response);
+    return res.status(200).json({
+      success: true,
+      projectId,
+      model,
+      ...story,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[generate-story] Claude call failed:', message);
+    return res.status(500).json({
+      success: false,
+      error: message,
+      projectId,
+    });
+  }
 });
 
 export default router;
