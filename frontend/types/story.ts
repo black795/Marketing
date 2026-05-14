@@ -14,11 +14,21 @@ export interface Scene {
   emotion: string;
   image_prompt: string;
   duration: number;
+  image_url?: string | null;
+  image_error?: string;
+}
+
+export interface Character {
+  name: string;
+  description: string;
 }
 
 export interface GenerateStoryResponse {
   success: boolean;
   projectId: string;
   model: string;
+  title?: string;
+  style?: string;
+  characters?: Character[];
   scenes: Scene[];
 }

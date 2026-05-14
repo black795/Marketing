@@ -14,6 +14,8 @@ export interface Scene {
   emotion: string;
   image_prompt: string;
   duration: number;
+  image_url?: string | null;
+  image_error?: string;
 }
 
 export interface Character {
