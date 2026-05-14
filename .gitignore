@@ -1,6 +1,19 @@
-﻿node_modules/
+node_modules/
 output/
 .cache/
 .remotion/
 *.pack
 *.exe
+
+# Secrets — no subir al repositorio público
+.env
+API/keys.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Playwright cache
+.playwright-mcp/
