@@ -129,3 +129,4 @@ Opera como agencia UGC completa: genera scripts, coordina actores IA, rastrea va
 | DaVinci Resolve control | ✅ Activo (MCP conectado) | MCP `resolve` |
 | Browser automation | ✅ Activo (Playwright MCP) | MCP `playwright` |
 | Remotion render | ⏳ Pendiente proyecto Remotion | `remotion_render.sh` |
+z4
