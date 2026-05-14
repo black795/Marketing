@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-pink: #FF2D8A;
+  --brand-yellow: #FFF466;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111111;
+}
