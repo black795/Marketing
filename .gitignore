@@ -8,6 +8,7 @@ output/
 # Secrets — no subir al repositorio público
 .env
 API/keys.env
+.claude/settings.local.json
 
 # Python
 __pycache__/

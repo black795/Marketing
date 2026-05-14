@@ -12,6 +12,7 @@ const MODEL_OPTIONS = [
 
 interface PromptFormProps {
   onResult: (data: GenerateStoryResponse) => void;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -23,7 +24,7 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export default function PromptForm({ onResult }: PromptFormProps) {
+export default function PromptForm({ onResult, onLoadingChange }: PromptFormProps) {
   const [prompt, setPrompt] = useState('');
   const [storyGuide, setStoryGuide] = useState('');
   const [model, setModel] = useState(MODEL_OPTIONS[0].value);
@@ -34,6 +35,7 @@ export default function PromptForm({ onResult }: PromptFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    onLoadingChange?.(true);
     setError(null);
 
     try {
@@ -53,6 +55,7 @@ export default function PromptForm({ onResult }: PromptFormProps) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+      onLoadingChange?.(false);
     }
   }
 

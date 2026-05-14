@@ -17,6 +17,10 @@ from API.manager import run_model
 
 from app.schemas import GenerateImageRequest, GenerateImageResponse
 
+# Patrón para detectar status HTTP embebido en mensajes de error de Replicate
+# Ejemplo: "ReplicateError Details: status: 429 detail: Request was throttled..."
+_STATUS_PATTERN = re.compile(r"status:\s*(\d{3})")
+
 router = APIRouter()
 
 # Maps the kebab-case names used on the wire (frontend → backend → worker)
@@ -111,9 +115,21 @@ async def generate_image(payload: GenerateImageRequest) -> GenerateImageResponse
         try:
             result = await run_in_threadpool(run_model, py_name, **kwargs)
         except Exception as exc:
+            message = str(exc)
+            status_match = _STATUS_PATTERN.search(message)
+            upstream_status = int(status_match.group(1)) if status_match else None
+
+            # Propagar 429 (throttled) y 402 (out of credit) tal cual
+            # para que el gateway pueda reintentar de forma inteligente.
+            if upstream_status in (429, 402):
+                raise HTTPException(
+                    status_code=upstream_status,
+                    detail=f"Replicate {upstream_status}: {message}",
+                ) from exc
+
             raise HTTPException(
                 status_code=502,
-                detail=f"Replicate call failed: {exc}",
+                detail=f"Replicate call failed: {message}",
             ) from exc
 
         image_url = _extract_url(result)
