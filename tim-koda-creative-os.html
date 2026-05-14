@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIAAT CONTENT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fffaf3;
+      --bg-soft: #fff2df;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-strong: #ffffff;
+      --text: #26181c;
+      --muted: #755d62;
+      --line: rgba(38, 24, 28, 0.1);
+      --pink: #ff2d8a;
+      --pink-soft: #ff6b8b;
+      --yellow: #fff466;
+      --peach: #ffd7bf;
+      --shadow-lg: 0 24px 80px rgba(81, 28, 50, 0.14);
+      --shadow-md: 0 18px 42px rgba(81, 28, 50, 0.12);
+      --shadow-sm: 0 10px 22px rgba(81, 28, 50, 0.08);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+      --transition: 180ms ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Inter", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 242, 102, 0.75), transparent 28%),
+        radial-gradient(circle at right 12%, rgba(255, 45, 138, 0.14), transparent 22%),
+        linear-gradient(180deg, #fffdf8 0%, #fff7ea 100%);
+    }
+
+    body {
+      padding: 24px;
+    }
+
+    .app-shell {
+      position: relative;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      border-radius: 40px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 250, 244, 0.9));
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+    }
+
+    .app-shell::before,
+    .app-shell::after {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      border-radius: 999px;
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .app-shell::before {
+      width: 240px;
+      height: 240px;
+      top: -110px;
+      right: -40px;
+      background: rgba(255, 45, 138, 0.14);
+    }
+
+    .app-shell::after {
+      width: 190px;
+      height: 190px;
+      left: -55px;
+      bottom: -65px;
+      background: rgba(255, 244, 102, 0.42);
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand-block {
+      display: grid;
+      gap: 12px;
+      max-width: 760px;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 45, 138, 0.1);
+      color: var(--pink);
+      font-size: 0.77rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2.4rem, 4vw, 4.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .topbar-stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 14px;
+      min-width: min(100%, 360px);
+    }
+
+    .stat-card {
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(38, 24, 28, 0.07);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .stat-card span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 24px;
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+    }
+
+    .panel h2 {
+      margin: 0 0 6px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-intro {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .field {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field label,
+    .fieldset-label {
+      font-size: 0.86rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    textarea,
+    .upload-zone,
+    .control-chip,
+    .generate-button {
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition), background var(--transition);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 18px;
+      border: 1px solid rgba(38, 24, 28, 0.12);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text);
+      font: inherit;
+      resize: vertical;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    textarea:focus,
+    .upload-zone.is-focused {
+      outline: none;
+      border-color: rgba(255, 45, 138, 0.45);
+      box-shadow: 0 0 0 4px rgba(255, 45, 138, 0.12);
+    }
+
+    .upload-zone {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      padding: 24px 18px;
+      border: 1.5px dashed rgba(38, 24, 28, 0.18);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(135deg, rgba(255, 45, 138, 0.05), rgba(255, 212, 146, 0.24)),
+        rgba(255, 255, 255, 0.92);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.is-dragover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 45, 138, 0.45);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .upload-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--yellow), #ffe4a3);
+      font-size: 1.5rem;
+      box-shadow: 0 14px 30px rgba(255, 209, 102, 0.28);
+    }
+
+    .upload-copy strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .upload-copy span {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .upload-preview {
+      display: none;
+      width: 100%;
+      max-width: 260px;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      box-shadow: var(--shadow-sm);
+      background: #fff;
+    }
+
+    .upload-preview img {
+      display: block;
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+    }
+
+    .upload-preview figcaption {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.87rem;
+      text-align: left;
+    }
+
+    .selector-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .control-chip {
+      padding: 12px 16px;
+      border: 1px solid rgba(38, 24, 28, 0.1);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(59, 28, 40, 0.04);
+    }
+
+    .control-chip:hover,
+    .control-chip:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(255, 45, 138, 0.35);
+      outline: none;
+    }
+
+    .control-chip.is-active {
+      background: linear-gradient(135deg, var(--pink), var(--pink-soft));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 14px 28px rgba(255, 45, 138, 0.3);
+    }
+
+    .generate-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 18px 20px;
+      border: 0;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--pink), #ff5479);
+      color: #fff;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 20px 30px rgba(255, 45, 138, 0.28);
+    }
+
+    .generate-button:hover,
+    .generate-button:focus-visible {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 34px rgba(255, 45, 138, 0.32);
+      outline: none;
+    }
+
+    .generate-button:disabled {
+      opacity: 0.68;
+      cursor: wait;
+      transform: none;
+      box-shadow: 0 14px 24px rgba(255, 45, 138, 0.16);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .preview-layout {
+      display: grid;
+      gap: 18px;
+    }
+
+    .preview-stage {
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 244, 235, 0.98)),
+        linear-gradient(135deg, rgba(255, 45, 138, 0.06), rgba(255, 244, 102, 0.14));
+      border: 1px solid rgba(38, 24, 28, 0.08);
+    }
+
+    .preview-media {
+      position: relative;
+      min-height: 360px;
+      overflow: hidden;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at top left, rgba(255, 244, 102, 0.55), transparent 24%),
+        linear-gradient(160deg, rgba(255, 45, 138, 0.22), rgba(255, 255, 255, 0.92));
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .preview-media img {
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-overlay {
+      position: absolute;
+      inset: auto 18px 18px 18px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .preview-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 45, 138, 0.1);
+      color: var(--pink);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .preview-title {
+      margin: 0 0 8px;
+      font-family: "Playfair Display", serif;
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .preview-description {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .meta-row,
+    .history-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-card {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .meta-card span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta-card strong {
+      font-size: 0.98rem;
+      line-height: 1.4;
+    }
+
+    .history-card,
+    .insight-card {
+      padding: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(38, 24, 28, 0.08);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .section-title span {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 250, 243, 0.94);
+      border: 1px solid rgba(38, 24, 28, 0.07);
+    }
+
+    .history-thumb {
+      width: 68px;
+      height: 68px;
+      border-radius: 16px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, rgba(255, 45, 138, 0.14), rgba(255, 244, 102, 0.3));
+    }
+
+    .history-item strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.95rem;
+    }
+
+    .history-item p,
+    .history-item span {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .insight-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      display: grid;
+      gap: 10px;
+      line-height: 1.6;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(255, 244, 102, 0.34), rgba(255, 45, 138, 0.08));
+      border: 1px solid rgba(38, 24, 28, 0.08);
+    }
+
+    .status-row strong {
+      font-size: 0.96rem;
+    }
+
+    .status-row span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .empty-history {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 14px;
+      }
+
+      .app-shell {
+        padding: 16px;
+        border-radius: 28px;
+      }
+
+      .panel,
+      .history-card,
+      .insight-card {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .topbar-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .selector-group {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .control-chip {
+        width: 100%;
+        text-align: center;
+      }
+
+      .preview-media,
+      .preview-media img {
+        min-height: 290px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <div class="content">
+      <section class="topbar" aria-label="Encabezado del sistema">
+        <div class="brand-block">
+          <div class="eyebrow">Creative OS Prototype</div>
+          <h1>Tim Koda<br>Creative OS</h1>
+          <p class="subtitle">
+            Prototipo visual inspirado en el branding del proyecto dentro de la carpeta <strong>Marketing</strong>:
+            rosa editorial, contraste amarillo y una experiencia pensada para convertir una idea vaga en piezas
+            listas para Reel, TikTok o LinkedIn.
+          </p>
+        </div>
+        <div class="topbar-stats" aria-label="Indicadores rápidos">
+          <article class="stat-card">
+            <strong>3 agentes</strong>
+            <span>Director Creativo, Content Machine y Repurposer</span>
+          </article>
+          <article class="stat-card">
+            <strong>1 flujo</strong>
+            <span>Prompt + imagen + formato + vista previa simulada</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Workspace de generación">
+        <section class="panel" aria-labelledby="composer-title">
+          <h2 id="composer-title">Composer</h2>
+          <p class="panel-intro">
+            Esta columna replica la zona de input de un prototipo creativo moderno: prompt obligatorio, imagen de referencia,
+            selector de agente y formato, más un CTA principal bien marcado.
+          </p>
+
+          <form class="form-grid" id="creative-form">
+            <div class="field">
+              <label for="prompt-input">Prompt creativo</label>
+              <textarea
+                id="prompt-input"
+                name="prompt"
+                placeholder="Ejemplo: crea un Reel editorial para una marca de skincare con luz natural, hook fuerte y CTA claro."
+                required
+              ></textarea>
+              <span class="hint">Describe la idea, el producto, el tono o el resultado que esperas.</span>
+            </div>
+
+            <div class="field">
+              <span class="fieldset-label">Imagen de referencia</span>
+              <!-- La previsualización queda dentro del mismo uploader para que la interacción se sienta tipo Figma Make. -->
+              <label class="upload-zone" id="upload-zone">
+                <input type="file" id="image-input" accept="image/*" aria-label="Cargar imagen de referencia">
+                <div class="upload-icon" aria-hidden="true">+</div>
+                <div class="upload-copy">
+                  <strong>Arrastra tu imagen o haz clic para seleccionar</strong>
+                  <span>Se usa como referencia visual para la generación simulada. Si no subes una, usamos una portada editorial por defecto.</span>
+                </div>
+                <figure class="upload-preview" id="upload-preview">
+                  <img id="upload-preview-image" alt="Vista previa de la imagen cargada">
+                  <figcaption id="upload-preview-caption"></figcaption>
+                </figure>
+              </label>
+            </div>
+
+            <div class="field">
+              <span class="fieldset-label">Agente activo</span>
+              <div class="selector-group" id="agent-selector" role="radiogroup" aria-label="Selector de agente">
+                <button type="button" class="control-chip is-active" data-group="agent" data-value="Director Creativo">Director Creativo</button>
+                <button type="button" class="control-chip" data-group="agent" data-value="Content Machine">Content Machine</button>
+                <button type="button" class="control-chip" data-group="agent" data-value="Repurposer">Repurposer</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <span class="fieldset-label">Formato de salida</span>
+              <div class="selector-group" id="format-selector" role="radiogroup" aria-label="Selector de formato">
+                <button type="button" class="control-chip is-active" data-group="format" data-value="Instagram Reel">Instagram Reel</button>
+                <button type="button" class="control-chip" data-group="format" data-value="TikTok">TikTok</button>
+                <button type="button" class="control-chip" data-group="format" data-value="LinkedIn">LinkedIn</button>
+              </div>
+            </div>
+
+            <button class="generate-button" id="generate-button" type="submit">
+              <span id="generate-button-label">Generar Contenido</span>
+            </button>
+          </form>
+        </section>
+
+        <section class="panel preview-layout" aria-labelledby="preview-title">
+          <div>
+            <h2 id="preview-title">Vista previa</h2>
+            <p class="panel-intro">
+              El resultado se genera en modo demo: simula una llamada asíncrona y produce una tarjeta hero, texto final,
+              metadata del flujo y un historial reciente persistido en <code>localStorage</code>.
+            </p>
+          </div>
+
+          <div class="preview-stage">
+            <div class="preview-media">
+              <img id="result-image" alt="Vista previa del contenido generado">
+              <div class="preview-overlay">
+                <div class="preview-badge" id="preview-badge">Instagram Reel • Director Creativo</div>
+                <h3 class="preview-title" id="result-title">Contenido listo para producir</h3>
+                <p class="preview-description" id="result-description">
+                  Escribe un prompt creativo, sube una referencia visual y genera una salida simulada inspirada en el stack de Tim Koda.
+                </p>
+              </div>
+            </div>
+
+            <div class="meta-row">
+              <div class="meta-grid">
+                <article class="meta-card">
+                  <span>Prompt</span>
+                  <strong id="meta-prompt">Aún no definido</strong>
+                </article>
+                <article class="meta-card">
+                  <span>Imagen</span>
+                  <strong id="meta-image">Portada por defecto</strong>
+                </article>
+                <article class="meta-card">
+                  <span>Estado</span>
+                  <strong id="meta-status">Esperando generación</strong>
+                </article>
+              </div>
+
+              <div class="status-row">
+                <strong id="status-summary">Sistema listo para generar una pieza editorial.</strong>
+                <span id="status-detail">La última salida combinará prompt + agente + formato + imagen subida.</span>
+              </div>
+            </div>
+          </div>
+
+          <article class="history-card">
+            <div class="section-title">
+              <h3>Historial reciente</h3>
+              <span>Máximo 5 generaciones</span>
+            </div>
+            <div class="history-list" id="history-list">
+              <p class="empty-history">Todavía no hay generaciones guardadas en esta sesión.</p>
+            </div>
+          </article>
+
+          <article class="insight-card">
+            <div class="section-title">
+              <h3>Conexión con Marketing</h3>
+              <span>Contexto backend/listado actual</span>
+            </div>
+            <ul>
+              <li><strong>Director Creativo</strong> toma una idea y la convierte en hook, walkthrough, transición, CTA y moodboard.</li>
+              <li><strong>Content Machine</strong> parte de una imagen y proyecta una campaña visual cohesiva.</li>
+              <li><strong>Repurposer</strong> adapta una pieza a formatos como carrusel, thread, post de LinkedIn o stories.</li>
+            </ul>
+          </article>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // El prototipo vive en un único archivo para abrirlo directamente en navegador.
+    // Toda la lógica está encapsulada aquí para que luego puedas conectar el botón
+    // a tu backend real dentro de Marketing sin depender de librerías externas.
+    (() => {
+      const storageKey = "tim-koda-creative-os-history";
+      const defaultImage = "assets/references/images_upscaled.jpeg";
+      const defaultPrompt = "Editorial social content";
+
+      const state = {
+        agent: "Director Creativo",
+        format: "Instagram Reel",
+        prompt: "",
+        imageName: "Portada por defecto",
+        imageDataUrl: defaultImage,
+        history: []
+      };
+
+      const form = document.getElementById("creative-form");
+      const promptInput = document.getElementById("prompt-input");
+      const imageInput = document.getElementById("image-input");
+      const uploadZone = document.getElementById("upload-zone");
+      const uploadPreview = document.getElementById("upload-preview");
+      const uploadPreviewImage = document.getElementById("upload-preview-image");
+      const uploadPreviewCaption = document.getElementById("upload-preview-caption");
+      const generateButton = document.getElementById("generate-button");
+      const generateButtonLabel = document.getElementById("generate-button-label");
+
+      const resultImage = document.getElementById("result-image");
+      const resultTitle = document.getElementById("result-title");
+      const resultDescription = document.getElementById("result-description");
+      const previewBadge = document.getElementById("preview-badge");
+      const metaPrompt = document.getElementById("meta-prompt");
+      const metaImage = document.getElementById("meta-image");
+      const metaStatus = document.getElementById("meta-status");
+      const statusSummary = document.getElementById("status-summary");
+      const statusDetail = document.getElementById("status-detail");
+      const historyList = document.getElementById("history-list");
+
+      function loadHistory() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          state.history = raw ? JSON.parse(raw) : [];
+        } catch (error) {
+          state.history = [];
+        }
+      }
+
+      function saveHistory() {
+        localStorage.setItem(storageKey, JSON.stringify(state.history));
+      }
+
+      function truncate(text, max = 70) {
+        return text.length > max ? `${text.slice(0, max).trim()}...` : text;
+      }
+
+      function formatTimestamp(date = new Date()) {
+        return new Intl.DateTimeFormat("es-BO", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        }).format(date);
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function renderHistory() {
+        if (!state.history.length) {
+          historyList.innerHTML = '<p class="empty-history">Todavía no hay generaciones guardadas en esta sesión.</p>';
+          return;
+        }
+
+        historyList.innerHTML = state.history.map((entry) => `
+          <article class="history-item">
+            <img class="history-thumb" src="${escapeHtml(entry.imageDataUrl)}" alt="Miniatura de ${escapeHtml(entry.format)}">
+            <div>
+              <strong>${escapeHtml(entry.format)} • ${escapeHtml(entry.agent)}</strong>
+              <p>${escapeHtml(truncate(entry.prompt, 82))}</p>
+              <span>${escapeHtml(entry.imageName)} • ${escapeHtml(entry.createdAt)}</span>
+            </div>
+          </article>
+        `).join("");
+      }
+
+      // Esta función actualiza el panel derecho y mantiene la sensación de preview viva,
+      // incluso antes de conectar una API real de generación.
+      function updatePreview({
+        prompt = defaultPrompt,
+        imageName = "Portada por defecto",
+        imageDataUrl = defaultImage,
+        status = "Esperando generación",
+        summary = "Sistema listo para generar una pieza editorial.",
+        detail = "La última salida combinará prompt + agente + formato + imagen subida."
+      } = {}) {
+        const promptText = prompt.trim() || defaultPrompt;
+        resultImage.src = imageDataUrl;
+        resultTitle.textContent = `${state.format} para ${truncate(promptText, 54)}`;
+        resultDescription.textContent = `Video generado para "${promptText}" con imagen "${imageName}" usando el agente ${state.agent}.`;
+        previewBadge.textContent = `${state.format} • ${state.agent}`;
+        metaPrompt.textContent = truncate(promptText, 60);
+        metaImage.textContent = imageName;
+        metaStatus.textContent = status;
+        statusSummary.textContent = summary;
+        statusDetail.textContent = detail;
+      }
+
+      function setUploadPreview(src, fileName) {
+        uploadPreview.style.display = "block";
+        uploadPreviewImage.src = src;
+        uploadPreviewImage.alt = `Vista previa de ${fileName}`;
+        uploadPreviewCaption.textContent = fileName;
+      }
+
+      function handleFile(file) {
+        if (!file || !file.type.startsWith("image/")) {
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.imageDataUrl = reader.result;
+          state.imageName = file.name;
+          setUploadPreview(reader.result, file.name);
+          updatePreview({
+            prompt: promptInput.value || defaultPrompt,
+            imageName: state.imageName,
+            imageDataUrl: state.imageDataUrl,
+            status: "Referencia cargada",
+            summary: "Imagen lista para usarse como input creativo.",
+            detail: "La miniatura se incorporará a la simulación cuando presiones Generar Contenido."
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function setActiveChip(group, value) {
+        document.querySelectorAll(`[data-group="${group}"]`).forEach((chip) => {
+          chip.classList.toggle("is-active", chip.dataset.value === value);
+        });
+        state[group] = value;
+        updatePreview({
+          prompt: promptInput.value || defaultPrompt,
+          imageName: state.imageName,
+          imageDataUrl: state.imageDataUrl
+        });
+      }
+
+      function setLoading(isLoading) {
+        generateButton.disabled = isLoading;
+        generateButtonLabel.textContent = isLoading ? "Generando..." : "Generar Contenido";
+        if (isLoading) {
+          const spinner = document.createElement("span");
+          spinner.className = "spinner";
+          spinner.setAttribute("aria-hidden", "true");
+          spinner.id = "button-spinner";
+          generateButton.prepend(spinner);
+        } else {
+          document.getElementById("button-spinner")?.remove();
+        }
+      }
+
+      async function simulateGeneration() {
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+          promptInput.focus();
+          promptInput.reportValidity();
+          return;
+        }
+
+        state.prompt = prompt;
+        setLoading(true);
+        updatePreview({
+          prompt,
+          imageName: state.imageName,
+          imageDataUrl: state.imageDataUrl,
+          status: "Generando...",
+          summary: `Procesando ${state.format} con ${state.agent}.`,
+          detail: "Simulando una llamada asíncrona de creación de contenido."
+        });
+
+        await new Promise((resolve) => window.setTimeout(resolve, 1650));
+
+        const createdAt = formatTimestamp(new Date());
+        const entry = {
+          prompt,
+          agent: state.agent,
+          format: state.format,
+          imageName: state.imageName,
+          imageDataUrl: state.imageDataUrl,
+          createdAt
+        };
+
+        state.history = [entry, ...state.history].slice(0, 5);
+        saveHistory();
+        renderHistory();
+        updatePreview({
+          prompt,
+          imageName: state.imageName,
+          imageDataUrl: state.imageDataUrl,
+          status: "Generación completada",
+          summary: `${state.format} generado con éxito en modo demo.`,
+          detail: `Video generado para "${prompt}" con imagen "${state.imageName}". Guardado en el historial reciente.`
+        });
+        setLoading(false);
+      }
+
+      document.querySelectorAll(".control-chip").forEach((chip) => {
+        chip.addEventListener("click", () => setActiveChip(chip.dataset.group, chip.dataset.value));
+      });
+
+      imageInput.addEventListener("change", (event) => {
+        handleFile(event.target.files?.[0]);
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.add("is-dragover", "is-focused");
+        });
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((eventName) => {
+        uploadZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          uploadZone.classList.remove("is-dragover", "is-focused");
+        });
+      });
+
+      uploadZone.addEventListener("drop", (event) => {
+        const file = event.dataTransfer?.files?.[0];
+        handleFile(file);
+      });
+
+      imageInput.addEventListener("focus", () => uploadZone.classList.add("is-focused"));
+      imageInput.addEventListener("blur", () => uploadZone.classList.remove("is-focused"));
+
+      promptInput.addEventListener("input", () => {
+        updatePreview({
+          prompt: promptInput.value || defaultPrompt,
+          imageName: state.imageName,
+          imageDataUrl: state.imageDataUrl,
+          status: "Editando prompt",
+          summary: "La salida se actualiza en tiempo real antes de generar.",
+          detail: "El prompt creativo es obligatorio y define el copy principal de la simulación."
+        });
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        simulateGeneration();
+      });
+
+      loadHistory();
+      renderHistory();
+      setUploadPreview(defaultImage, "Portada por defecto");
+      updatePreview({
+        prompt: defaultPrompt,
+        imageName: state.imageName,
+        imageDataUrl: state.imageDataUrl
+      });
+    })();
+  </script>
+</body>
+</html>
