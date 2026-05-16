@@ -39,6 +39,51 @@ REFERENCE_KW: dict[str, str] = {
     "gpt_image_2": "input_images",
 }
 
+# ── Mapeo de calidad por modelo ────────────────────────────────────────────────
+# Cada modelo expone parámetros nativos distintos. El frontend manda un
+# perfil unificado ("draft" / "standard" / "high" / "ultra") y aquí
+# se traduce a los kwargs reales que entiende cada wrapper en /API.
+
+QUALITY_PROFILES = ("draft", "standard", "high", "ultra")
+
+NANO_BANANA_QUALITY_MAP: dict[str, dict[str, Any]] = {
+    "draft": {"resolution": "1K", "output_format": "jpg"},
+    "standard": {"resolution": "2K", "output_format": "jpg"},
+    "high": {"resolution": "2K", "output_format": "png"},
+    "ultra": {"resolution": "4K", "output_format": "png"},
+}
+
+GPT_IMAGE_QUALITY_MAP: dict[str, dict[str, Any]] = {
+    "draft": {"quality": "low", "output_compression": 75, "output_format": "webp"},
+    "standard": {"quality": "medium", "output_compression": 85, "output_format": "webp"},
+    "high": {"quality": "high", "output_compression": 92, "output_format": "png"},
+    "ultra": {"quality": "high", "output_compression": 100, "output_format": "png"},
+}
+
+# gpt-image-2 no soporta 4:5 ni match_input_image. Mapeamos al más cercano.
+GPT_IMAGE_ASPECT_FALLBACK: dict[str, str] = {
+    "4:5": "3:4",
+    "match_input_image": "1:1",
+}
+
+
+def _resolve_quality_kwargs(py_name: str, quality: str) -> dict[str, Any]:
+    """Traduce un perfil de calidad a kwargs nativos del modelo."""
+    if quality not in QUALITY_PROFILES:
+        quality = "standard"
+    if py_name == "nano_banana_pro":
+        return dict(NANO_BANANA_QUALITY_MAP[quality])
+    if py_name == "gpt_image_2":
+        return dict(GPT_IMAGE_QUALITY_MAP[quality])
+    return {}
+
+
+def _resolve_aspect_ratio(py_name: str, aspect_ratio: str) -> str:
+    """Algunos modelos no soportan todos los aspect ratios. Mapeamos al más cercano."""
+    if py_name == "gpt_image_2":
+        return GPT_IMAGE_ASPECT_FALLBACK.get(aspect_ratio, aspect_ratio)
+    return aspect_ratio
+
 DATA_URL_PATTERN = re.compile(r"^data:(?P<mime>image/[a-zA-Z0-9.+-]+);base64,(?P<data>.+)$")
 
 
@@ -84,6 +129,40 @@ def _extract_url(result: Any) -> str:
     raise RuntimeError(f"Unexpected run_model result shape: {result!r}")
 
 
+def _consolidate_reference_urls(payload: GenerateImageRequest) -> list[str]:
+    """Junta el campo plural y el legacy singular en una sola lista, sin duplicados."""
+    urls: list[str] = []
+    seen: set[str] = set()
+    for u in list(payload.reference_image_urls or []):
+        if isinstance(u, str) and u and u not in seen:
+            seen.add(u)
+            urls.append(u)
+    if payload.reference_image_url and payload.reference_image_url not in seen:
+        urls.append(payload.reference_image_url)
+    return urls
+
+
+def _identity_prefix(model_id: str, ref_count: int) -> str:
+    """Refuerzo de identidad: instruye al modelo a tratar las refs como identidad canónica."""
+    if ref_count == 0:
+        return ""
+    if model_id == "nano_banana_pro":
+        return (
+            "IDENTITY LOCK: The provided reference images show the SAME real character. "
+            "Match facial structure, eyes, hair, skin tone, body type, and distinctive "
+            "features EXACTLY across every output. Do not invent a different person; "
+            "do not blend with stock looks. Preserve identity above style. "
+            "Scene description follows: "
+        )
+    if model_id == "gpt_image_2":
+        return (
+            "Use the provided input_images as the canonical identity of the main "
+            "character. Preserve face, hair, eyes, build, and identifiable features "
+            "exactly. The text below describes the scene around that character: "
+        )
+    return ""
+
+
 @router.post("/generate-image", response_model=GenerateImageResponse)
 async def generate_image(payload: GenerateImageRequest) -> GenerateImageResponse:
     if payload.model in NOT_YET_IMPLEMENTED:
@@ -100,17 +179,34 @@ async def generate_image(payload: GenerateImageRequest) -> GenerateImageResponse
             f"Known: {sorted(MODEL_NAME_MAP.keys())}",
         )
 
+    aspect_ratio = _resolve_aspect_ratio(py_name, payload.aspect_ratio)
+    quality_kwargs = _resolve_quality_kwargs(py_name, payload.quality)
+    ref_urls = _consolidate_reference_urls(payload)
+
+    final_prompt = _identity_prefix(py_name, len(ref_urls)) + payload.prompt
+
     kwargs: dict[str, Any] = {
-        "prompt": payload.prompt,
-        "aspect_ratio": payload.aspect_ratio,
+        "prompt": final_prompt,
+        "aspect_ratio": aspect_ratio,
+        **quality_kwargs,
     }
 
-    temp_ref: Path | None = None
+    temp_refs: list[Path] = []
     try:
-        if payload.reference_image_url:
-            temp_ref = await _materialize_reference(payload.reference_image_url)
+        if ref_urls:
+            for url in ref_urls:
+                try:
+                    path = await _materialize_reference(url)
+                except HTTPException:
+                    raise
+                except Exception as exc:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Failed to prepare reference image: {exc}",
+                    ) from exc
+                temp_refs.append(path)
             ref_kw = REFERENCE_KW[py_name]
-            kwargs[ref_kw] = [str(temp_ref)]
+            kwargs[ref_kw] = [str(p) for p in temp_refs]
 
         try:
             result = await run_in_threadpool(run_model, py_name, **kwargs)
@@ -138,8 +234,9 @@ async def generate_image(payload: GenerateImageRequest) -> GenerateImageResponse
         return GenerateImageResponse(image_url=image_url, model=model_id)
 
     finally:
-        if temp_ref and temp_ref.exists():
-            try:
-                temp_ref.unlink()
-            except OSError:
-                pass
+        for p in temp_refs:
+            if p.exists():
+                try:
+                    p.unlink()
+                except OSError:
+                    pass

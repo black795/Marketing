@@ -6,12 +6,18 @@ import SceneCard from './SceneCard';
 interface ScenesGridProps {
   scenes: Scene[];
   selectedSceneNumber?: number | null;
+  selectionMode?: boolean;
+  selectedForRegen?: Set<number>;
+  regeneratingNumbers?: Set<number>;
   onSelectScene: (scene: Scene) => void;
 }
 
 export default function ScenesGrid({
   scenes,
   selectedSceneNumber,
+  selectionMode = false,
+  selectedForRegen,
+  regeneratingNumbers,
   onSelectScene,
 }: ScenesGridProps) {
   if (scenes.length === 0) {
@@ -29,6 +35,9 @@ export default function ScenesGrid({
           key={scene.scene_number}
           scene={scene}
           isActive={selectedSceneNumber === scene.scene_number}
+          selectionMode={selectionMode}
+          isSelected={selectedForRegen?.has(scene.scene_number) ?? false}
+          isRegenerating={regeneratingNumbers?.has(scene.scene_number) ?? false}
           onClick={onSelectScene}
         />
       ))}

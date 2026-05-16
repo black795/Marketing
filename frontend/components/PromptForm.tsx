@@ -1,8 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { generateStory } from '@/lib/api';
-import type { GenerateStoryResponse } from '@/types/story';
+import { generateScript } from '@/lib/api';
+import {
+  DEFAULT_SETTINGS,
+  type GenerationSettings,
+} from '@/lib/generation-settings';
+import type { GenerateScriptResponse } from '@/types/story';
+import GenerationSettingsControls from './GenerationSettingsControls';
+import ReferenceImagesUploader, {
+  type ReferenceImage,
+} from './ReferenceImagesUploader';
 
 const MODEL_OPTIONS = [
   { value: 'nano-banana-pro', label: 'Nano Banana Pro' },
@@ -11,24 +19,46 @@ const MODEL_OPTIONS = [
 ];
 
 interface PromptFormProps {
-  onResult: (data: GenerateStoryResponse) => void;
+  onScript: (data: GenerateScriptResponse, ctx: PromptContext) => void;
   onLoadingChange?: (loading: boolean) => void;
+  initialVisualPrompt?: string;
+  initialNarrativePrompt?: string;
+  initialModel?: string;
+  initialSettings?: GenerationSettings;
+  initialReferences?: ReferenceImage[];
+  submitLabel?: string;
+  loadingLabel?: string;
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
+export interface PromptContext {
+  visualPrompt: string;
+  narrativePrompt: string;
+  model: string;
+  /** Lista de referencias del personaje (data URLs ya redimensionadas). */
+  referenceImages: ReferenceImage[];
+  settings: GenerationSettings;
 }
 
-export default function PromptForm({ onResult, onLoadingChange }: PromptFormProps) {
-  const [prompt, setPrompt] = useState('');
-  const [storyGuide, setStoryGuide] = useState('');
-  const [model, setModel] = useState(MODEL_OPTIONS[0].value);
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+export default function PromptForm({
+  onScript,
+  onLoadingChange,
+  initialVisualPrompt = '',
+  initialNarrativePrompt = '',
+  initialModel,
+  initialSettings,
+  initialReferences,
+  submitLabel = 'Generar guion',
+  loadingLabel = 'Generando guion…',
+}: PromptFormProps) {
+  const [visualPrompt, setVisualPrompt] = useState(initialVisualPrompt);
+  const [narrativePrompt, setNarrativePrompt] = useState(initialNarrativePrompt);
+  const [model, setModel] = useState(initialModel ?? MODEL_OPTIONS[0].value);
+  const [references, setReferences] = useState<ReferenceImage[]>(
+    initialReferences ?? []
+  );
+  const [settings, setSettings] = useState<GenerationSettings>(
+    initialSettings ?? DEFAULT_SETTINGS
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,18 +69,23 @@ export default function PromptForm({ onResult, onLoadingChange }: PromptFormProp
     setError(null);
 
     try {
-      const referenceImage = referenceFile
-        ? await fileToBase64(referenceFile)
-        : undefined;
+      const refDataUrls = references.map((r) => r.dataUrl);
 
-      const data = await generateStory({
-        prompt,
-        storyGuide: storyGuide || undefined,
+      const data = await generateScript({
+        visualPrompt,
+        narrativePrompt: narrativePrompt || undefined,
         model,
-        referenceImage,
+        referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
+        sceneCount: settings.sceneCount,
       });
 
-      onResult(data);
+      onScript(data, {
+        visualPrompt,
+        narrativePrompt,
+        model,
+        referenceImages: references,
+        settings,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -62,35 +97,58 @@ export default function PromptForm({ onResult, onLoadingChange }: PromptFormProp
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-1">
-          Prompt <span className="text-brand-pink">*</span>
+        <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-neutral-700">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-pink text-[10px] font-bold text-white">
+            A
+          </span>
+          Prompt visual <span className="text-brand-pink">*</span>
         </label>
+        <p className="mb-1.5 text-xs text-neutral-500">
+          Estilo, personajes, escenas, estética, composición, ambiente, referencias visuales.
+        </p>
         <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          value={visualPrompt}
+          onChange={(e) => setVisualPrompt(e.target.value)}
           required
           rows={4}
-          placeholder="Describe la historia que quieres generar..."
+          placeholder="Ej: editorial bright, mujer joven con outfit oversized en estudio de cerámica, luz natural lateral, paleta pastel, textura iPhone candid…"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-1">
-          Story guide
+        <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-neutral-700">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-yellow text-[10px] font-bold text-neutral-900">
+            B
+          </span>
+          Prompt narrativo
         </label>
+        <p className="mb-1.5 text-xs text-neutral-500">
+          Historia, tono, secuencia, emociones, mensaje, estructura.
+        </p>
         <textarea
-          value={storyGuide}
-          onChange={(e) => setStoryGuide(e.target.value)}
-          rows={3}
-          placeholder="Tono, referencias visuales, audiencia (opcional)..."
+          value={narrativePrompt}
+          onChange={(e) => setNarrativePrompt(e.target.value)}
+          rows={4}
+          placeholder="Ej: arco de inseguridad → flow → orgullo. La protagonista llega frustrada, encuentra ritmo trabajando el barro, termina sosteniendo la pieza terminada con calma…"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
         />
       </div>
 
+      <div className="rounded-md border border-neutral-200 bg-neutral-50/60 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Configuración de generación
+        </p>
+        <GenerationSettingsControls
+          value={settings}
+          onChange={setSettings}
+          disabled={loading}
+        />
+      </div>
+
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-1">
-          Modelo
+        <label className="mb-1 block text-sm font-semibold text-neutral-700">
+          Modelo de imagen
         </label>
         <select
           value={model}
@@ -106,20 +164,19 @@ export default function PromptForm({ onResult, onLoadingChange }: PromptFormProp
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-neutral-700 mb-1">
-          Imagen referencial
+        <label className="mb-1 block text-sm font-semibold text-neutral-700">
+          Referencias del personaje
         </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setReferenceFile(e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-neutral-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand-pink file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-pink-600"
+        <p className="mb-1.5 text-xs text-neutral-500">
+          Sube varias tomas (frente, perfil, cuerpo entero, expresiones, ropa).
+          El modelo las usa como identidad canónica para mantener al personaje
+          consistente entre escenas y regeneraciones.
+        </p>
+        <ReferenceImagesUploader
+          value={references}
+          onChange={setReferences}
+          disabled={loading}
         />
-        {referenceFile && (
-          <p className="mt-1 text-xs text-neutral-500">
-            {referenceFile.name} ({Math.round(referenceFile.size / 1024)} KB)
-          </p>
-        )}
       </div>
 
       <button
@@ -127,7 +184,7 @@ export default function PromptForm({ onResult, onLoadingChange }: PromptFormProp
         disabled={loading}
         className="w-full rounded-md bg-brand-pink px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? 'Generando...' : 'Generar historia'}
+        {loading ? loadingLabel : submitLabel}
       </button>
 
       {error && (

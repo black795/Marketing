@@ -43,10 +43,10 @@ router.post('/generate-story', async (req: Request, res: Response) => {
     }
 
     const story = await generateStoryFromPrompt({
-      prompt,
-      storyGuide,
+      visualPrompt: prompt,
+      narrativePrompt: storyGuide,
       model,
-      referenceImage,
+      referenceImages: referenceImage ? [referenceImage] : undefined,
     });
     console.log(
       `[generate-story] Claude returned ${story.scenes.length} scenes — generando imágenes…`

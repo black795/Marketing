@@ -2,15 +2,26 @@
 
 import type { GenerateStoryResponse } from '@/types/story';
 import ExportJsonButton from './ExportJsonButton';
-import VideoPlaceholderButton from './VideoPlaceholderButton';
+import DownloadAllImagesButton from './DownloadAllImagesButton';
+import ApproveContinueButton from './ApproveContinueButton';
 
 interface ProjectHeaderProps {
   project: GenerateStoryResponse;
+  selectionMode?: boolean;
+  regenerating?: boolean;
   onReset?: () => void;
+  onToggleSelectionMode?: () => void;
 }
 
-export default function ProjectHeader({ project, onReset }: ProjectHeaderProps) {
+export default function ProjectHeader({
+  project,
+  selectionMode = false,
+  regenerating = false,
+  onReset,
+  onToggleSelectionMode,
+}: ProjectHeaderProps) {
   const characters = project.characters ?? [];
+  const hasAnyImage = project.scenes.some((s) => !!s.image_url);
 
   return (
     <header className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -43,14 +54,53 @@ export default function ProjectHeader({ project, onReset }: ProjectHeaderProps) 
             <button
               type="button"
               onClick={onReset}
+              disabled={regenerating}
               aria-label="Generar una nueva historia"
-              className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-pink"
+              className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
             >
               Nueva
             </button>
           )}
+
+          {onToggleSelectionMode && (
+            <button
+              type="button"
+              onClick={onToggleSelectionMode}
+              disabled={regenerating || !hasAnyImage}
+              aria-pressed={selectionMode}
+              aria-label={
+                selectionMode
+                  ? 'Salir del modo de regeneración'
+                  : 'Activar modo de regeneración para seleccionar imágenes'
+              }
+              className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50 ${
+                selectionMode
+                  ? 'border-brand-pink bg-brand-pink text-white hover:bg-pink-600'
+                  : 'border-neutral-300 bg-white text-neutral-800 hover:border-brand-pink hover:text-brand-pink'
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              {selectionMode ? 'Cerrar selección' : 'Regenerar imágenes'}
+            </button>
+          )}
+
+          <DownloadAllImagesButton project={project} />
           <ExportJsonButton project={project} />
-          <VideoPlaceholderButton />
+          <ApproveContinueButton disabled={regenerating || !hasAnyImage} />
         </div>
       </div>
     </header>

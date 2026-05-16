@@ -8,8 +8,15 @@ const DEFAULT_RETRY_DELAY_MS = 12_000;
 export interface GenerateImageInput {
   model: string;
   prompt: string;
-  referenceImageUrl?: string;
+  /**
+   * Lista de imágenes de referencia (data: URLs o http URLs). El worker
+   * las propaga a `image_input` / `input_images` del modelo según el caso
+   * para preservar identidad del personaje entre escenas.
+   */
+  referenceImageUrls?: string[];
   aspectRatio?: string;
+  /** "draft" | "standard" | "high" | "ultra" — el worker mapea por modelo. */
+  quality?: string;
 }
 
 export interface GenerateImageResult {
@@ -80,8 +87,9 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
       body: JSON.stringify({
         model: input.model,
         prompt: input.prompt,
-        reference_image_url: input.referenceImageUrl,
+        reference_image_urls: input.referenceImageUrls ?? [],
         aspect_ratio: input.aspectRatio ?? '9:16',
+        quality: input.quality ?? 'standard',
       }),
       signal: controller.signal,
     });
