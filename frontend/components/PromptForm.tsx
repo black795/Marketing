@@ -13,6 +13,7 @@ import ReferenceImagesUploader, {
 } from './ReferenceImagesUploader';
 import LoadingButton from './loading/LoadingButton';
 import ProgressBar from './loading/ProgressBar';
+import VoiceFieldWrapper from './voice/VoiceFieldWrapper';
 
 const MODEL_OPTIONS = [
   { value: 'nano-banana-pro', label: 'Nano Banana Pro' },
@@ -147,14 +148,21 @@ export default function PromptForm({
         <p className="mb-1.5 text-xs text-neutral-500">
           Estilo, personajes, escenas, estética, composición, ambiente, referencias visuales.
         </p>
-        <textarea
+        <VoiceFieldWrapper
           value={visualPrompt}
-          onChange={(e) => setVisualPrompt(e.target.value)}
-          required
-          rows={4}
-          placeholder="Ej: editorial bright, mujer joven con outfit oversized en estudio de cerámica, luz natural lateral, paleta pastel, textura iPhone candid…"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-        />
+          onChange={setVisualPrompt}
+          disabled={loading}
+          fieldLabel="el prompt visual"
+        >
+          <textarea
+            value={visualPrompt}
+            onChange={(e) => setVisualPrompt(e.target.value)}
+            required
+            rows={4}
+            placeholder="Ej: editorial bright, mujer joven con outfit oversized en estudio de cerámica, luz natural lateral, paleta pastel, textura iPhone candid…"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 pr-14 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+          />
+        </VoiceFieldWrapper>
       </div>
 
       <div>
@@ -167,13 +175,20 @@ export default function PromptForm({
         <p className="mb-1.5 text-xs text-neutral-500">
           Historia, tono, secuencia, emociones, mensaje, estructura.
         </p>
-        <textarea
+        <VoiceFieldWrapper
           value={narrativePrompt}
-          onChange={(e) => setNarrativePrompt(e.target.value)}
-          rows={4}
-          placeholder="Ej: arco de inseguridad → flow → orgullo. La protagonista llega frustrada, encuentra ritmo trabajando el barro, termina sosteniendo la pieza terminada con calma…"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-        />
+          onChange={setNarrativePrompt}
+          disabled={loading}
+          fieldLabel="el prompt narrativo"
+        >
+          <textarea
+            value={narrativePrompt}
+            onChange={(e) => setNarrativePrompt(e.target.value)}
+            rows={4}
+            placeholder="Ej: arco de inseguridad → flow → orgullo. La protagonista llega frustrada, encuentra ritmo trabajando el barro, termina sosteniendo la pieza terminada con calma…"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 pr-14 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+          />
+        </VoiceFieldWrapper>
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-neutral-50/60 p-4">

@@ -19,6 +19,7 @@ import {
 } from '@/lib/scene-history';
 import LoadingButton from './loading/LoadingButton';
 import ProgressBar from './loading/ProgressBar';
+import VoiceFieldWrapper from './voice/VoiceFieldWrapper';
 
 interface SceneEditPanelProps {
   scene: Scene | null;
@@ -419,12 +420,18 @@ function EditTab({
             </button>
           )}
         </header>
-        <textarea
+        <VoiceFieldWrapper
           value={edit.prompt}
-          onChange={(e) => onPatch({ prompt: e.target.value })}
-          rows={5}
-          className="w-full rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-xs leading-relaxed text-neutral-800 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
-        />
+          onChange={(v) => onPatch({ prompt: v })}
+          fieldLabel="el prompt de esta escena"
+        >
+          <textarea
+            value={edit.prompt}
+            onChange={(e) => onPatch({ prompt: e.target.value })}
+            rows={5}
+            className="w-full rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 pr-14 font-mono text-xs leading-relaxed text-neutral-800 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+          />
+        </VoiceFieldWrapper>
       </section>
 
       <FieldWithPresets
