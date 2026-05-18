@@ -4,7 +4,10 @@ import { useCallback, useRef, useState } from 'react';
 import PromptForm, { type PromptContext } from '@/components/PromptForm';
 import ProjectHeader from '@/components/ProjectHeader';
 import ScenesGrid from '@/components/ScenesGrid';
-import SceneDetailPanel from '@/components/SceneDetailPanel';
+import SceneEditPanel from '@/components/SceneEditPanel';
+import CompareDialog, {
+  type CompareDecision,
+} from '@/components/CompareDialog';
 import TimelineStrip from '@/components/TimelineStrip';
 import RegenerateToolbar from '@/components/RegenerateToolbar';
 import ScriptReviewPanel from '@/components/ScriptReviewPanel';
@@ -14,6 +17,7 @@ import Spinner from '@/components/loading/Spinner';
 import type { SceneStreamStatus } from '@/components/SceneCard';
 import {
   generateScript,
+  regenerateSingleScene,
   streamGenerateImagesFromScript,
   streamRegenerateImages,
   StreamCancelledError,
@@ -22,6 +26,11 @@ import {
   DEFAULT_SETTINGS,
   type GenerationSettings,
 } from '@/lib/generation-settings';
+import {
+  type AdvancedEdit,
+  type SceneVersion,
+  versionFromScene,
+} from '@/lib/scene-history';
 import type {
   GenerateScriptResponse,
   GenerateStoryResponse,
@@ -80,10 +89,30 @@ export default function Home() {
   const [streamWarning, setStreamWarning] = useState<string | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
 
+  // ---------- Edición avanzada por escena ----------
+  const [historyByScene, setHistoryByScene] = useState<
+    Map<number, SceneVersion[]>
+  >(() => new Map());
+  const [singleRegenScene, setSingleRegenScene] = useState<number | null>(null);
+  const [singleRegenStatus, setSingleRegenStatus] = useState<string>('');
+  const [singleRegenError, setSingleRegenError] = useState<string | null>(null);
+  const singleRegenAbortRef = useRef<AbortController | null>(null);
+
+  interface PendingCompare {
+    sceneNumber: number;
+    originalScene: Scene;
+    newScene: Scene; // contiene image_url o image_error
+    finalPrompt: string;
+    edit: AdvancedEdit;
+  }
+  const [pendingCompare, setPendingCompare] =
+    useState<PendingCompare | null>(null);
+
   // ---------- Reset ----------
   function handleReset() {
     streamAbortRef.current?.abort();
     regenAbortRef.current?.abort();
+    singleRegenAbortRef.current?.abort();
     setPhase('idle');
     setScript(null);
     setScriptApproved(false);
@@ -100,6 +129,11 @@ export default function Home() {
     setStreamStatusByNumber(new Map());
     setStreamProgress(null);
     setStreamWarning(null);
+    setHistoryByScene(new Map());
+    setSingleRegenScene(null);
+    setSingleRegenStatus('');
+    setSingleRegenError(null);
+    setPendingCompare(null);
   }
 
   // ---------- Fase 1 → 2: guion ----------
@@ -253,6 +287,17 @@ export default function Home() {
       };
       setResult(merged);
 
+      // Siembra el historial con la versión inicial por escena.
+      setHistoryByScene(() => {
+        const map = new Map<number, SceneVersion[]>();
+        for (const s of finalScenes) {
+          if (s.image_url) {
+            map.set(s.scene_number, [versionFromScene(s, 'initial')]);
+          }
+        }
+        return map;
+      });
+
       if (outcome.status === 'cancelled') {
         setScriptError('Generación cancelada. Volvemos al guion.');
         setPhase('script-review');
@@ -371,19 +416,25 @@ export default function Home() {
               message: `Regenerando escena ${scene_number}…`,
             }),
           onResult: ({ result: r, index, total }) => {
+            let updatedScene: Scene | null = null;
             setResult((prev) => {
               if (!prev) return prev;
               const updatedScenes = prev.scenes.map((scene) => {
                 if (scene.scene_number !== r.scene_number) return scene;
                 const { image_error: _ignored, ...rest } = scene;
-                return {
+                const next: Scene = {
                   ...rest,
                   image_url: r.image_url,
                   ...(r.image_error ? { image_error: r.image_error } : {}),
                 };
+                updatedScene = next;
+                return next;
               });
               return { ...prev, scenes: updatedScenes };
             });
+            if (updatedScene && r.image_url) {
+              pushHistoryVersion(r.scene_number, updatedScene, 'edit');
+            }
             setRegeneratingNumbers((prev) => {
               const next = new Set(prev);
               next.delete(r.scene_number);
@@ -435,6 +486,178 @@ export default function Home() {
     setRegenProgress((p) =>
       p ? { ...p, message: 'Cancelando…' } : p
     );
+  }
+
+  // ---------- Edición avanzada: helpers ----------
+  function pushHistoryVersion(
+    sceneNumber: number,
+    scene: Scene,
+    source: SceneVersion['source'],
+    label?: string
+  ) {
+    setHistoryByScene((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(sceneNumber) ?? [];
+      next.set(sceneNumber, [...existing, versionFromScene(scene, source, label)]);
+      return next;
+    });
+  }
+
+  function applySceneUpdate(sceneNumber: number, patch: Partial<Scene>): Scene | null {
+    let updated: Scene | null = null;
+    setResult((prev) => {
+      if (!prev) return prev;
+      const scenes = prev.scenes.map((s) => {
+        if (s.scene_number !== sceneNumber) return s;
+        const { image_error: _ignored, ...rest } = s;
+        const next: Scene = { ...rest, ...patch };
+        updated = next;
+        return next;
+      });
+      return { ...prev, scenes };
+    });
+    if (updated && selectedScene?.scene_number === sceneNumber) {
+      setSelectedScene(updated);
+    }
+    return updated;
+  }
+
+  // ---------- Edición avanzada: regenerar una sola escena ----------
+  async function handleRegenerateSingle({
+    sceneNumber,
+    finalPrompt,
+    edit,
+  }: {
+    sceneNumber: number;
+    finalPrompt: string;
+    edit: AdvancedEdit;
+  }) {
+    if (!result || singleRegenScene !== null) return;
+    const original = result.scenes.find((s) => s.scene_number === sceneNumber);
+    if (!original) return;
+
+    setSingleRegenScene(sceneNumber);
+    setSingleRegenError(null);
+    setSingleRegenStatus('Conectando…');
+
+    const abort = new AbortController();
+    singleRegenAbortRef.current = abort;
+
+    try {
+      const refDataUrls = promptCtx?.referenceImages.map((r) => r.dataUrl) ?? [];
+      const r = await regenerateSingleScene(
+        {
+          model: result.model,
+          scene_number: sceneNumber,
+          image_prompt: finalPrompt,
+          quality: settings.quality,
+          aspectRatio: settings.aspectRatio,
+          referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
+        },
+        { onProgress: (m) => setSingleRegenStatus(m) },
+        abort.signal
+      );
+
+      // Construyo la "nueva" Scene (no la persisto aún — espera decisión del usuario).
+      const newScene: Scene = {
+        ...original,
+        camera: edit.camera || original.camera,
+        lighting: edit.lighting || original.lighting,
+        emotion: edit.emotion || original.emotion,
+        image_prompt: finalPrompt,
+        image_url: r.image_url,
+        ...(r.image_error ? { image_error: r.image_error } : {}),
+      };
+
+      setPendingCompare({
+        sceneNumber,
+        originalScene: original,
+        newScene,
+        finalPrompt,
+        edit,
+      });
+    } catch (err) {
+      if (err instanceof StreamCancelledError) {
+        setSingleRegenError('Generación cancelada.');
+      } else {
+        setSingleRegenError(
+          err instanceof Error ? err.message : 'Error al regenerar la escena'
+        );
+      }
+    } finally {
+      setSingleRegenScene(null);
+      setSingleRegenStatus('');
+      singleRegenAbortRef.current = null;
+    }
+  }
+
+  function handleCancelSingleRegen() {
+    singleRegenAbortRef.current?.abort();
+    setSingleRegenStatus('Cancelando…');
+  }
+
+  function handleCompareDecision(decision: CompareDecision) {
+    if (!pendingCompare) return;
+    const { sceneNumber, originalScene, newScene } = pendingCompare;
+
+    if (decision === 'keep') {
+      // No tocar la escena. Sólo cerrar.
+      setPendingCompare(null);
+      return;
+    }
+
+    if (decision === 'both') {
+      // Guarda la nueva en el historial pero mantiene la original como actual.
+      if (newScene.image_url) {
+        pushHistoryVersion(
+          sceneNumber,
+          newScene,
+          'edit',
+          'guardada sin reemplazar'
+        );
+      }
+      setPendingCompare(null);
+      return;
+    }
+
+    // 'replace' → la original cae al historial (si no estaba ya como v1),
+    // la nueva pasa a ser la actual y se agrega al historial.
+    const history = historyByScene.get(sceneNumber) ?? [];
+    const originalAlreadyInHistory = history.some(
+      (v) => v.image_url === originalScene.image_url
+    );
+    if (!originalAlreadyInHistory && originalScene.image_url) {
+      pushHistoryVersion(sceneNumber, originalScene, 'initial');
+    }
+
+    const updated = applySceneUpdate(sceneNumber, {
+      image_url: newScene.image_url,
+      image_prompt: newScene.image_prompt,
+      camera: newScene.camera,
+      lighting: newScene.lighting,
+      emotion: newScene.emotion,
+      ...(newScene.image_error ? { image_error: newScene.image_error } : {}),
+    });
+    if (updated && updated.image_url) {
+      pushHistoryVersion(sceneNumber, updated, 'edit');
+    }
+    setPendingCompare(null);
+  }
+
+  function handleRestoreVersion(sceneNumber: number, versionId: string) {
+    const history = historyByScene.get(sceneNumber) ?? [];
+    const v = history.find((x) => x.id === versionId);
+    if (!v || !v.image_url) return;
+    const updated = applySceneUpdate(sceneNumber, {
+      image_url: v.image_url,
+      image_prompt: v.image_prompt,
+      camera: v.camera,
+      lighting: v.lighting,
+      emotion: v.emotion,
+    });
+    if (updated) {
+      pushHistoryVersion(sceneNumber, updated, 'restore', `restaurada`);
+    }
   }
 
   // ---------- Render ----------
@@ -625,9 +848,51 @@ export default function Home() {
         </div>
       )}
 
-      <SceneDetailPanel
+      <SceneEditPanel
         scene={selectedScene}
-        onClose={() => setSelectedScene(null)}
+        history={
+          selectedScene
+            ? historyByScene.get(selectedScene.scene_number) ?? []
+            : []
+        }
+        regenerating={
+          selectedScene !== null &&
+          singleRegenScene === selectedScene.scene_number
+        }
+        regenStatus={singleRegenStatus}
+        regenError={singleRegenError}
+        onClose={() => {
+          if (singleRegenScene !== null) return;
+          setSelectedScene(null);
+          setSingleRegenError(null);
+        }}
+        onRegenerate={handleRegenerateSingle}
+        onCancelRegenerate={handleCancelSingleRegen}
+        onRestoreVersion={handleRestoreVersion}
+      />
+
+      <CompareDialog
+        open={pendingCompare !== null}
+        title={
+          pendingCompare
+            ? `Comparar escena #${pendingCompare.sceneNumber}`
+            : 'Comparar versiones'
+        }
+        originalUrl={pendingCompare?.originalScene.image_url ?? null}
+        originalLabel="Actual"
+        newUrl={pendingCompare?.newScene.image_url ?? null}
+        newLabel="Nueva"
+        newError={pendingCompare?.newScene.image_error}
+        promptDiff={
+          pendingCompare
+            ? {
+                before: pendingCompare.originalScene.image_prompt,
+                after: pendingCompare.finalPrompt,
+              }
+            : undefined
+        }
+        onClose={() => setPendingCompare(null)}
+        onDecide={handleCompareDecision}
       />
     </main>
   );

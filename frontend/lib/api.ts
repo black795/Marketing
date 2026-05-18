@@ -273,6 +273,53 @@ export interface RegenerateStreamResult {
   failed: number;
 }
 
+/**
+ * Atajo para regenerar una sola escena. Devuelve directamente el resultado
+ * (o lanza StreamCancelledError si el usuario cancela).
+ */
+export async function regenerateSingleScene(
+  payload: {
+    model: string;
+    scene_number: number;
+    image_prompt: string;
+    quality?: string;
+    aspectRatio?: string;
+    referenceImages?: string[];
+  },
+  callbacks: { onProgress?: (msg: string) => void } = {},
+  signal: AbortSignal
+): Promise<RegenerateImageResult> {
+  const outcome = await streamRegenerateImages(
+    {
+      model: payload.model,
+      scenes: [
+        {
+          scene_number: payload.scene_number,
+          image_prompt: payload.image_prompt,
+        },
+      ],
+      quality: payload.quality,
+      aspectRatio: payload.aspectRatio,
+      referenceImages: payload.referenceImages,
+    },
+    {
+      onStart: () => callbacks.onProgress?.('Conectando con el worker…'),
+      onSceneStart: () => callbacks.onProgress?.('Generando imagen…'),
+      onResult: () => callbacks.onProgress?.('Imagen lista'),
+    },
+    signal
+  );
+
+  if (outcome.status === 'cancelled') {
+    throw new StreamCancelledError();
+  }
+  const r = outcome.results[0];
+  if (!r) {
+    throw new Error('El worker no devolvió resultado');
+  }
+  return r;
+}
+
 export async function streamRegenerateImages(
   payload: RegenerateImagesRequest,
   callbacks: RegenerateStreamCallbacks,
