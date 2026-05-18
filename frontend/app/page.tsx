@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import PromptForm, { type PromptContext } from '@/components/PromptForm';
 import ProjectHeader from '@/components/ProjectHeader';
 import ScenesGrid from '@/components/ScenesGrid';
@@ -8,10 +8,15 @@ import SceneDetailPanel from '@/components/SceneDetailPanel';
 import TimelineStrip from '@/components/TimelineStrip';
 import RegenerateToolbar from '@/components/RegenerateToolbar';
 import ScriptReviewPanel from '@/components/ScriptReviewPanel';
+import LoadingButton from '@/components/loading/LoadingButton';
+import ProgressBar from '@/components/loading/ProgressBar';
+import Spinner from '@/components/loading/Spinner';
+import type { SceneStreamStatus } from '@/components/SceneCard';
 import {
-  generateImagesFromScript,
   generateScript,
-  regenerateImages,
+  streamGenerateImagesFromScript,
+  streamRegenerateImages,
+  StreamCancelledError,
 } from '@/lib/api';
 import {
   DEFAULT_SETTINGS,
@@ -29,6 +34,13 @@ type Phase =
   | 'script-review'
   | 'generating-images'
   | 'result';
+
+interface StreamProgress {
+  total: number;
+  completed: number;
+  currentSceneNumber: number | null;
+  message: string;
+}
 
 export default function Home() {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -52,9 +64,26 @@ export default function Home() {
     () => new Set()
   );
   const [regenError, setRegenError] = useState<string | null>(null);
+  const [regenProgress, setRegenProgress] = useState<StreamProgress | null>(
+    null
+  );
+  const regenAbortRef = useRef<AbortController | null>(null);
+
+  // Streaming de generación inicial de imágenes
+  const [streamScenes, setStreamScenes] = useState<Scene[]>([]);
+  const [streamStatusByNumber, setStreamStatusByNumber] = useState<
+    Map<number, SceneStreamStatus>
+  >(() => new Map());
+  const [streamProgress, setStreamProgress] = useState<StreamProgress | null>(
+    null
+  );
+  const [streamWarning, setStreamWarning] = useState<string | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   // ---------- Reset ----------
   function handleReset() {
+    streamAbortRef.current?.abort();
+    regenAbortRef.current?.abort();
     setPhase('idle');
     setScript(null);
     setScriptApproved(false);
@@ -65,7 +94,12 @@ export default function Home() {
     setSelectionMode(false);
     setSelectedForRegen(new Set());
     setRegenError(null);
+    setRegenProgress(null);
     setSettings(DEFAULT_SETTINGS);
+    setStreamScenes([]);
+    setStreamStatusByNumber(new Map());
+    setStreamProgress(null);
+    setStreamWarning(null);
   }
 
   // ---------- Fase 1 → 2: guion ----------
@@ -110,39 +144,143 @@ export default function Home() {
     }
   }
 
-  // ---------- Fase 3 → 4: imágenes ----------
+  // ---------- Fase 3 → 4: imágenes (con SSE) ----------
   async function handleContinueToImages() {
     if (!script || !scriptApproved || !promptCtx) return;
-    setPhase('generating-images');
+
     setScriptError(null);
+    setPhase('generating-images');
+
+    const placeholderScenes: Scene[] = script.scenes.map((s) => ({
+      ...s,
+      image_url: null,
+    }));
+    setStreamScenes(placeholderScenes);
+    const initialStatus = new Map<number, SceneStreamStatus>(
+      placeholderScenes.map((s) => [s.scene_number, 'pending' as const])
+    );
+    setStreamStatusByNumber(initialStatus);
+    setStreamProgress({
+      total: script.scenes.length,
+      completed: 0,
+      currentSceneNumber: null,
+      message: 'Conectando con el worker…',
+    });
+    setStreamWarning(null);
+
+    const abort = new AbortController();
+    streamAbortRef.current = abort;
+
     try {
       const refDataUrls = promptCtx.referenceImages.map((r) => r.dataUrl);
-      const data = await generateImagesFromScript({
-        model: promptCtx.model,
-        projectId: script.projectId,
-        scenes: script.scenes,
-        quality: settings.quality,
-        aspectRatio: settings.aspectRatio,
-        referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
-      });
+      const outcome = await streamGenerateImagesFromScript(
+        {
+          model: promptCtx.model,
+          projectId: script.projectId,
+          scenes: script.scenes,
+          quality: settings.quality,
+          aspectRatio: settings.aspectRatio,
+          referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
+        },
+        {
+          onStart: ({ total }) => {
+            setStreamProgress({
+              total,
+              completed: 0,
+              currentSceneNumber: null,
+              message: 'Encolando escenas…',
+            });
+          },
+          onSceneStart: ({ scene_number, index, total }) => {
+            setStreamStatusByNumber((prev) => {
+              const next = new Map(prev);
+              next.set(scene_number, 'active');
+              return next;
+            });
+            setStreamProgress({
+              total,
+              completed: index,
+              currentSceneNumber: scene_number,
+              message: `Generando escena ${scene_number} de ${total}…`,
+            });
+          },
+          onScene: ({ scene, index, total }) => {
+            setStreamScenes((prev) => {
+              const idx = prev.findIndex(
+                (s) => s.scene_number === scene.scene_number
+              );
+              if (idx < 0) return [...prev, scene];
+              const next = prev.slice();
+              next[idx] = scene;
+              return next;
+            });
+            setStreamStatusByNumber((prev) => {
+              const next = new Map(prev);
+              next.set(
+                scene.scene_number,
+                scene.image_url ? 'done' : 'error'
+              );
+              return next;
+            });
+            setStreamProgress({
+              total,
+              completed: index,
+              currentSceneNumber: null,
+              message:
+                index === total
+                  ? 'Finalizando…'
+                  : `Escena ${scene.scene_number} lista (${index}/${total})`,
+            });
+          },
+          onWarning: (msg) => setStreamWarning(msg),
+        },
+        abort.signal
+      );
+
+      const finalScenes =
+        outcome.scenes.length === script.scenes.length
+          ? outcome.scenes
+          : mergeScenes(placeholderScenes, outcome.scenes);
 
       const merged: GenerateStoryResponse = {
-        success: data.success,
+        success: outcome.status === 'done',
         projectId: script.projectId,
         model: promptCtx.model,
         title: script.title,
         style: script.style,
         characters: script.characters,
-        scenes: data.scenes,
+        scenes: finalScenes,
       };
       setResult(merged);
-      setPhase('result');
+
+      if (outcome.status === 'cancelled') {
+        setScriptError('Generación cancelada. Volvemos al guion.');
+        setPhase('script-review');
+      } else {
+        setPhase('result');
+      }
     } catch (err) {
-      setScriptError(
-        err instanceof Error ? err.message : 'No se pudieron generar las imágenes'
-      );
+      if (err instanceof StreamCancelledError) {
+        setScriptError('Generación cancelada.');
+      } else {
+        setScriptError(
+          err instanceof Error
+            ? err.message
+            : 'No se pudieron generar las imágenes'
+        );
+      }
       setPhase('script-review');
+    } finally {
+      streamAbortRef.current = null;
+      setStreamProgress(null);
     }
+  }
+
+  function handleCancelImageStream() {
+    streamAbortRef.current?.abort();
+    setStreamProgress((p) =>
+      p ? { ...p, message: 'Cancelando…' } : p
+    );
   }
 
   // ---------- Fase 5: selección + regeneración de imágenes ----------
@@ -194,55 +332,109 @@ export default function Home() {
     setRegenerating(true);
     setRegenError(null);
     setRegeneratingNumbers(new Set(scenesToRegen.map((s) => s.scene_number)));
+    setRegenProgress({
+      total: scenesToRegen.length,
+      completed: 0,
+      currentSceneNumber: null,
+      message: 'Conectando…',
+    });
+
+    const abort = new AbortController();
+    regenAbortRef.current = abort;
 
     try {
       const refDataUrls = promptCtx?.referenceImages.map((r) => r.dataUrl) ?? [];
-      const response = await regenerateImages({
-        model: result.model,
-        scenes: scenesToRegen.map((s) => ({
-          scene_number: s.scene_number,
-          image_prompt: s.image_prompt,
-        })),
-        quality: settings.quality,
-        aspectRatio: settings.aspectRatio,
-        referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
-      });
-
-      const byNumber = new Map(
-        response.results.map((r) => [r.scene_number, r])
+      const outcome = await streamRegenerateImages(
+        {
+          model: result.model,
+          scenes: scenesToRegen.map((s) => ({
+            scene_number: s.scene_number,
+            image_prompt: s.image_prompt,
+          })),
+          quality: settings.quality,
+          aspectRatio: settings.aspectRatio,
+          referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
+        },
+        {
+          onStart: ({ total }) =>
+            setRegenProgress({
+              total,
+              completed: 0,
+              currentSceneNumber: null,
+              message: `Regenerando ${total} imagen${total === 1 ? '' : 'es'}…`,
+            }),
+          onSceneStart: ({ scene_number, index, total }) =>
+            setRegenProgress({
+              total,
+              completed: index,
+              currentSceneNumber: scene_number,
+              message: `Regenerando escena ${scene_number}…`,
+            }),
+          onResult: ({ result: r, index, total }) => {
+            setResult((prev) => {
+              if (!prev) return prev;
+              const updatedScenes = prev.scenes.map((scene) => {
+                if (scene.scene_number !== r.scene_number) return scene;
+                const { image_error: _ignored, ...rest } = scene;
+                return {
+                  ...rest,
+                  image_url: r.image_url,
+                  ...(r.image_error ? { image_error: r.image_error } : {}),
+                };
+              });
+              return { ...prev, scenes: updatedScenes };
+            });
+            setRegeneratingNumbers((prev) => {
+              const next = new Set(prev);
+              next.delete(r.scene_number);
+              return next;
+            });
+            setRegenProgress({
+              total,
+              completed: index,
+              currentSceneNumber: null,
+              message:
+                index === total
+                  ? 'Finalizando…'
+                  : `${index}/${total} regeneradas`,
+            });
+          },
+        },
+        abort.signal
       );
 
-      setResult((prev) => {
-        if (!prev) return prev;
-        const updatedScenes = prev.scenes.map((scene) => {
-          const r = byNumber.get(scene.scene_number);
-          if (!r) return scene;
-          const { image_error, ...rest } = scene;
-          return {
-            ...rest,
-            image_url: r.image_url,
-            ...(r.image_error ? { image_error: r.image_error } : {}),
-          };
-        });
-        return { ...prev, scenes: updatedScenes };
-      });
-
-      const failed = response.results.filter((r) => !r.image_url);
-      if (failed.length > 0) {
+      if (outcome.status === 'cancelled') {
         setRegenError(
-          `${failed.length} de ${response.results.length} no se regeneraron correctamente.`
+          `Cancelado. ${outcome.results.length} de ${scenesToRegen.length} regeneradas.`
+        );
+      } else if (outcome.failed > 0) {
+        setRegenError(
+          `${outcome.failed} de ${outcome.results.length} no se regeneraron correctamente.`
         );
       }
 
       setSelectedForRegen(new Set());
     } catch (err) {
-      setRegenError(
-        err instanceof Error ? err.message : 'Error al regenerar imágenes'
-      );
+      if (err instanceof StreamCancelledError) {
+        setRegenError('Regeneración cancelada.');
+      } else {
+        setRegenError(
+          err instanceof Error ? err.message : 'Error al regenerar imágenes'
+        );
+      }
     } finally {
       setRegenerating(false);
       setRegeneratingNumbers(new Set());
+      setRegenProgress(null);
+      regenAbortRef.current = null;
     }
+  }
+
+  function handleCancelRegen() {
+    regenAbortRef.current?.abort();
+    setRegenProgress((p) =>
+      p ? { ...p, message: 'Cancelando…' } : p
+    );
   }
 
   // ---------- Render ----------
@@ -313,11 +505,27 @@ export default function Home() {
 
         {phase === 'generating-images' && script && (
           <div className="space-y-6">
-            <LoadingCard
-              label="Generando imágenes del guion aprobado…"
-              detail={`${script.scenes.length} escenas en cola. Procesamos secuencialmente para evitar rate limits de Replicate.`}
+            <StreamingProgressCard
+              progress={streamProgress}
+              warning={streamWarning}
+              onCancel={handleCancelImageStream}
             />
-            <SkeletonGrid count={script.scenes.length} />
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                  Escenas en vivo
+                </h2>
+                <p className="text-xs text-neutral-500">
+                  {countDone(streamStatusByNumber)} de {script.scenes.length}{' '}
+                  generadas
+                </p>
+              </div>
+              <ScenesGrid
+                scenes={streamScenes}
+                streamStatusByNumber={streamStatusByNumber}
+                onSelectScene={(s) => setSelectedScene(s)}
+              />
+            </section>
           </div>
         )}
 
@@ -377,16 +585,35 @@ export default function Home() {
       {phase === 'result' && result && (
         <div className="fixed bottom-0 left-0 right-0 z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
           {selectionMode && (
-            <RegenerateToolbar
-              selectedCount={selectedForRegen.size}
-              totalCount={result.scenes.length}
-              regenerating={regenerating}
-              error={regenError}
-              onSelectAll={handleSelectAll}
-              onClearSelection={handleClearSelection}
-              onCancel={toggleSelectionMode}
-              onRegenerate={handleRegenerateSelected}
-            />
+            <>
+              {regenerating && regenProgress && (
+                <div className="border-b border-neutral-200 bg-white/95 backdrop-blur">
+                  <div className="mx-auto max-w-7xl px-6 py-2.5">
+                    <ProgressBar
+                      value={
+                        regenProgress.total > 0
+                          ? regenProgress.completed / regenProgress.total
+                          : null
+                      }
+                      label={regenProgress.message}
+                      showPercent
+                    />
+                  </div>
+                </div>
+              )}
+              <RegenerateToolbar
+                selectedCount={selectedForRegen.size}
+                totalCount={result.scenes.length}
+                regenerating={regenerating}
+                error={regenError}
+                onSelectAll={handleSelectAll}
+                onClearSelection={handleClearSelection}
+                onCancel={
+                  regenerating ? handleCancelRegen : toggleSelectionMode
+                }
+                onRegenerate={handleRegenerateSelected}
+              />
+            </>
           )}
           <TimelineStrip
             scenes={result.scenes}
@@ -404,6 +631,24 @@ export default function Home() {
       />
     </main>
   );
+}
+
+// ---------- helpers ----------
+
+function mergeScenes(base: Scene[], updates: Scene[]): Scene[] {
+  const map = new Map(base.map((s) => [s.scene_number, s]));
+  for (const u of updates) {
+    map.set(u.scene_number, u);
+  }
+  return Array.from(map.values()).sort(
+    (a, b) => a.scene_number - b.scene_number
+  );
+}
+
+function countDone(map: Map<number, SceneStreamStatus>): number {
+  let n = 0;
+  for (const v of map.values()) if (v === 'done' || v === 'error') n++;
+  return n;
 }
 
 // ---------- subcomponentes locales ----------
@@ -471,33 +716,84 @@ function LoadingCard({ label, detail }: { label: string; detail: string }) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="flex items-center gap-3">
-        <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-brand-pink" />
+        <Spinner size={18} className="text-brand-pink" />
         <p className="text-sm font-semibold text-neutral-800">{label}</p>
       </div>
       <p className="mt-2 text-xs text-neutral-500">{detail}</p>
+      <div className="mt-3">
+        <ProgressBar value={null} showPercent={false} />
+      </div>
     </div>
   );
 }
 
-function SkeletonGrid({ count }: { count: number }) {
-  const n = Math.min(Math.max(count, 3), 6);
+function StreamingProgressCard({
+  progress,
+  warning,
+  onCancel,
+}: {
+  progress: StreamProgress | null;
+  warning: string | null;
+  onCancel: () => void;
+}) {
+  const value =
+    progress && progress.total > 0
+      ? progress.completed / progress.total
+      : null;
+  const message = progress?.message ?? 'Generando imágenes…';
+
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: n }).map((_, i) => (
-        <div
-          key={i}
-          className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
-        >
-          <div
-            className="w-full animate-pulse bg-neutral-200"
-            style={{ aspectRatio: '9 / 16' }}
-          />
-          <div className="space-y-2 p-3">
-            <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-200" />
-            <div className="h-3 w-1/3 animate-pulse rounded bg-neutral-200" />
+    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <Spinner size={18} className="text-brand-pink" />
+            <p className="text-sm font-semibold text-neutral-800">
+              Generando imágenes en tiempo real
+            </p>
           </div>
+          <p className="mt-1 text-xs text-neutral-500">{message}</p>
+          <div className="mt-3">
+            <ProgressBar
+              value={value}
+              showPercent
+              detail={
+                progress
+                  ? `${progress.completed} de ${progress.total} escenas listas`
+                  : undefined
+              }
+            />
+          </div>
+          {warning && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800">
+              ⚠ {warning}
+            </p>
+          )}
         </div>
-      ))}
+        <div className="flex shrink-0 items-start">
+          <LoadingButton
+            variant="danger"
+            onClick={onCancel}
+            leftIcon={
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="6" y="6" width="12" height="12" rx="1" />
+              </svg>
+            }
+          >
+            Cancelar generación
+          </LoadingButton>
+        </div>
+      </div>
     </div>
   );
 }

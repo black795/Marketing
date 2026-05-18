@@ -1,7 +1,7 @@
 'use client';
 
 import type { Scene } from '@/types/story';
-import SceneCard from './SceneCard';
+import SceneCard, { type SceneStreamStatus } from './SceneCard';
 
 interface ScenesGridProps {
   scenes: Scene[];
@@ -9,6 +9,7 @@ interface ScenesGridProps {
   selectionMode?: boolean;
   selectedForRegen?: Set<number>;
   regeneratingNumbers?: Set<number>;
+  streamStatusByNumber?: Map<number, SceneStreamStatus>;
   onSelectScene: (scene: Scene) => void;
 }
 
@@ -18,6 +19,7 @@ export default function ScenesGrid({
   selectionMode = false,
   selectedForRegen,
   regeneratingNumbers,
+  streamStatusByNumber,
   onSelectScene,
 }: ScenesGridProps) {
   if (scenes.length === 0) {
@@ -38,6 +40,7 @@ export default function ScenesGrid({
           selectionMode={selectionMode}
           isSelected={selectedForRegen?.has(scene.scene_number) ?? false}
           isRegenerating={regeneratingNumbers?.has(scene.scene_number) ?? false}
+          streamStatus={streamStatusByNumber?.get(scene.scene_number)}
           onClick={onSelectScene}
         />
       ))}

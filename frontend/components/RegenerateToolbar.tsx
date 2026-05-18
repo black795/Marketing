@@ -1,5 +1,7 @@
 'use client';
 
+import LoadingButton from './loading/LoadingButton';
+
 interface RegenerateToolbarProps {
   selectedCount: number;
   totalCount: number;
@@ -7,6 +9,7 @@ interface RegenerateToolbarProps {
   error?: string | null;
   onSelectAll: () => void;
   onClearSelection: () => void;
+  /** Cuando regenerating es true, este botón funciona como cancelar. */
   onCancel: () => void;
   onRegenerate: () => void;
 }
@@ -52,41 +55,39 @@ export default function RegenerateToolbar({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <LoadingButton
+            variant={regenerating ? 'danger' : 'secondary'}
             onClick={onCancel}
-            disabled={regenerating}
-            className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-400 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Cancelar
-          </button>
-          <button
-            type="button"
+            {regenerating ? 'Cancelar generación' : 'Cancelar'}
+          </LoadingButton>
+          <LoadingButton
+            variant="primary"
             onClick={onRegenerate}
             disabled={!canRegenerate}
+            loading={regenerating}
+            loadingLabel="Regenerando…"
             aria-label={`Regenerar ${selectedCount} imagen${selectedCount === 1 ? '' : 'es'} seleccionada${selectedCount === 1 ? '' : 's'}`}
-            className="inline-flex items-center gap-2 rounded-md bg-brand-pink px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-60"
+            leftIcon={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            }
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={regenerating ? 'animate-spin' : ''}
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            {regenerating
-              ? 'Regenerando…'
-              : `Regenerar ${selectedCount > 0 ? `(${selectedCount})` : ''}`}
-          </button>
+            {`Regenerar${selectedCount > 0 ? ` (${selectedCount})` : ''}`}
+          </LoadingButton>
         </div>
       </div>
     </div>

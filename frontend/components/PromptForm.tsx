@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generateScript } from '@/lib/api';
 import {
   DEFAULT_SETTINGS,
@@ -11,6 +11,8 @@ import GenerationSettingsControls from './GenerationSettingsControls';
 import ReferenceImagesUploader, {
   type ReferenceImage,
 } from './ReferenceImagesUploader';
+import LoadingButton from './loading/LoadingButton';
+import ProgressBar from './loading/ProgressBar';
 
 const MODEL_OPTIONS = [
   { value: 'nano-banana-pro', label: 'Nano Banana Pro' },
@@ -60,24 +62,54 @@ export default function PromptForm({
     initialSettings ?? DEFAULT_SETTINGS
   );
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      setStatusMessage('');
+      return;
+    }
+    const messages = [
+      'Analizando prompts…',
+      'Modelando personajes…',
+      'Estructurando escenas…',
+      'Aplicando dirección visual…',
+      'Casi listo…',
+    ];
+    let i = 0;
+    setStatusMessage(messages[0]);
+    const id = setInterval(() => {
+      i = Math.min(i + 1, messages.length - 1);
+      setStatusMessage(messages[i]);
+    }, 2500);
+    return () => clearInterval(id);
+  }, [loading]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return; // bloquea duplicados
     setLoading(true);
     onLoadingChange?.(true);
     setError(null);
 
+    const abort = new AbortController();
+    abortRef.current = abort;
+
     try {
       const refDataUrls = references.map((r) => r.dataUrl);
 
-      const data = await generateScript({
-        visualPrompt,
-        narrativePrompt: narrativePrompt || undefined,
-        model,
-        referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
-        sceneCount: settings.sceneCount,
-      });
+      const data = await generateScript(
+        {
+          visualPrompt,
+          narrativePrompt: narrativePrompt || undefined,
+          model,
+          referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
+          sceneCount: settings.sceneCount,
+        },
+        { signal: abort.signal }
+      );
 
       onScript(data, {
         visualPrompt,
@@ -87,11 +119,20 @@ export default function PromptForm({
         settings,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      if ((err as any)?.name === 'AbortError') {
+        setError('Cancelado.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      }
     } finally {
       setLoading(false);
       onLoadingChange?.(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleCancel() {
+    abortRef.current?.abort();
   }
 
   return (
@@ -179,13 +220,35 @@ export default function PromptForm({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-md bg-brand-pink px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {loading ? loadingLabel : submitLabel}
-      </button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <LoadingButton
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={loading}
+            loadingLabel={loadingLabel}
+          >
+            {submitLabel}
+          </LoadingButton>
+          {loading && (
+            <LoadingButton
+              type="button"
+              variant="secondary"
+              onClick={handleCancel}
+            >
+              Cancelar
+            </LoadingButton>
+          )}
+        </div>
+        {loading && (
+          <ProgressBar
+            value={null}
+            showPercent={false}
+            label={statusMessage || loadingLabel}
+          />
+        )}
+      </div>
 
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

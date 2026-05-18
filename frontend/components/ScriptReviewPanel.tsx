@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { GenerateScriptResponse, Scene } from '@/types/story';
 import type { GenerationSettings } from '@/lib/generation-settings';
 import GenerationSettingsControls from './GenerationSettingsControls';
+import LoadingButton from './loading/LoadingButton';
 
 interface ScriptReviewPanelProps {
   script: GenerateScriptResponse;
@@ -137,31 +138,33 @@ export default function ScriptReviewPanel({
               {editing ? 'Cerrar edición' : 'Editar'}
             </button>
 
-            <button
-              type="button"
+            <LoadingButton
+              variant="secondary"
               onClick={onRegenerate}
-              disabled={busy}
+              disabled={busy && !regenerating}
+              loading={regenerating}
+              loadingLabel="Regenerando…"
               aria-label="Descartar este guion y generar uno nuevo"
-              className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-800 shadow-sm transition hover:border-brand-pink hover:text-brand-pink focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
+              leftIcon={
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="23 4 23 10 17 10" />
+                  <polyline points="1 20 1 14 7 14" />
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                </svg>
+              }
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className={regenerating ? 'animate-spin' : ''}
-              >
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-              {regenerating ? 'Regenerando…' : 'Regenerar guion'}
-            </button>
+              Regenerar guion
+            </LoadingButton>
 
             {approved ? (
               <button
@@ -350,51 +353,32 @@ export default function ScriptReviewPanel({
               ? `Guion aprobado · ${settings.quality} · ${settings.aspectRatio}. Genera las imágenes cuando estés listo.`
               : 'Aprueba el guion para habilitar la generación de imágenes.'}
           </p>
-          <button
-            type="button"
+          <LoadingButton
+            variant="primary"
             onClick={onContinue}
             disabled={!approved || busy}
+            loading={generatingImages}
+            loadingLabel="Generando imágenes…"
             aria-label="Continuar a la generación de imágenes"
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-pink px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
+            rightIcon={
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            }
           >
-            {generatingImages ? (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                  className="animate-spin"
-                >
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-                Generando imágenes…
-              </>
-            ) : (
-              <>
-                Continuar a imágenes
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </>
-            )}
-          </button>
+            Continuar a imágenes
+          </LoadingButton>
         </div>
       </div>
     </section>

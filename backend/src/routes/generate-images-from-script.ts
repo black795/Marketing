@@ -4,6 +4,7 @@ import {
   checkWorkerHealth,
   generateImage,
 } from '../services/python-worker/imageWorker';
+import { openSseStream } from '../services/sse';
 
 interface ScriptSceneInput {
   scene_number: number;
@@ -62,10 +63,15 @@ router.post('/generate-images-from-script', async (req: Request, res: Response) 
     });
   }
 
+  const wantsStream =
+    req.query.stream === '1' ||
+    (typeof req.headers.accept === 'string' &&
+      req.headers.accept.includes('text/event-stream'));
+
   console.log(
     `[generate-images-from-script] start projectId=${projectId ?? 'n/a'} ` +
       `model=${model} scenes=${scenes.length} quality=${quality ?? 'standard'} ` +
-      `aspect=${aspectRatio ?? '9:16'} refs=${refs.length}`
+      `aspect=${aspectRatio ?? '9:16'} refs=${refs.length} stream=${wantsStream}`
   );
 
   const health = await checkWorkerHealth();
@@ -75,6 +81,110 @@ router.post('/generate-images-from-script', async (req: Request, res: Response) 
     );
   }
 
+  // ------------------------------------------------------------------
+  // Modo SSE — el frontend recibe eventos progress/scene/done en vivo.
+  // ------------------------------------------------------------------
+  if (wantsStream) {
+    const sse = openSseStream(res);
+    const abort = new AbortController();
+    let clientGone = false;
+
+    req.on('close', () => {
+      if (!res.writableEnded) {
+        clientGone = true;
+        console.log('[generate-images-from-script] client disconnected, aborting');
+        abort.abort();
+      }
+    });
+
+    sse.send({
+      event: 'start',
+      data: {
+        projectId: projectId ?? null,
+        model,
+        total: scenes.length,
+        quality: quality ?? 'standard',
+        aspectRatio: aspectRatio ?? '9:16',
+      },
+    });
+
+    if (!health.ok) {
+      sse.send({
+        event: 'warning',
+        data: { message: `Worker health check failed: ${health.detail}` },
+      });
+    }
+
+    const out: Scene[] = [];
+    for (const scene of scenes) {
+      if (abort.signal.aborted) break;
+
+      sse.send({
+        event: 'scene-start',
+        data: {
+          scene_number: scene.scene_number,
+          scene_title: scene.scene_title,
+          index: out.length,
+          total: scenes.length,
+        },
+      });
+
+      const result = await generateImage({
+        model,
+        prompt: scene.image_prompt,
+        quality,
+        aspectRatio,
+        referenceImageUrls: refs.length > 0 ? refs : undefined,
+        abortSignal: abort.signal,
+      });
+
+      const merged: Scene = {
+        ...scene,
+        image_url: result.image_url,
+        ...(result.image_error ? { image_error: result.image_error } : {}),
+      };
+      out.push(merged);
+
+      sse.send({
+        event: 'scene-done',
+        data: {
+          scene: merged,
+          index: out.length,
+          total: scenes.length,
+          progress: out.length / scenes.length,
+        },
+      });
+    }
+
+    if (clientGone || abort.signal.aborted) {
+      sse.send({
+        event: 'cancelled',
+        data: { completed: out.length, total: scenes.length, scenes: out },
+      });
+    } else {
+      const failed = out.filter((s) => !s.image_url).length;
+      console.log(
+        `[generate-images-from-script] done total=${out.length} failed=${failed}`
+      );
+      sse.send({
+        event: 'done',
+        data: {
+          success: true,
+          model,
+          projectId: projectId ?? null,
+          scenes: out,
+          failed,
+        },
+      });
+    }
+
+    sse.close();
+    return;
+  }
+
+  // ------------------------------------------------------------------
+  // Modo legacy JSON (compat). Sin streaming ni cancelación temprana.
+  // ------------------------------------------------------------------
   const out: Scene[] = [];
   for (const scene of scenes) {
     console.log(

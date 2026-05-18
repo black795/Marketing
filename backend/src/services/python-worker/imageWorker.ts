@@ -17,6 +17,18 @@ export interface GenerateImageInput {
   aspectRatio?: string;
   /** "draft" | "standard" | "high" | "ultra" — el worker mapea por modelo. */
   quality?: string;
+  /**
+   * Permite cancelar la request en curso (fetch + retries + sleeps). Si se
+   * dispara, attempt aborta el fetch y generateImage corta el bucle de retry.
+   */
+  abortSignal?: AbortSignal;
+}
+
+export class CancelledError extends Error {
+  constructor(message = 'Cancelled by client') {
+    super(message);
+    this.name = 'CancelledError';
+  }
 }
 
 export interface GenerateImageResult {
@@ -37,8 +49,22 @@ interface AttemptError {
 }
 type Attempt = AttemptResult | AttemptError;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new CancelledError());
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new CancelledError());
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 function describeFetchError(err: unknown): string {
@@ -79,6 +105,13 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const startedAt = Date.now();
+
+  const external = input.abortSignal;
+  const onExternalAbort = () => controller.abort();
+  if (external) {
+    if (external.aborted) controller.abort();
+    else external.addEventListener('abort', onExternalAbort, { once: true });
+  }
 
   try {
     const response = await fetch(`${WORKER_URL}/generate-image`, {
@@ -140,6 +173,9 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
   } catch (err) {
     const elapsedMs = Date.now() - startedAt;
     if (err instanceof Error && err.name === 'AbortError') {
+      if (external?.aborted) {
+        return { ok: false, status: null, detail: 'Cancelled by client', retryable: false };
+      }
       const msg = `Timeout after ${REQUEST_TIMEOUT_MS / 1000}s waiting for ${WORKER_URL}`;
       console.error(`[imageWorker] ✗ ${msg}`);
       return { ok: false, status: null, detail: msg, retryable: false };
@@ -154,6 +190,7 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
     return { ok: false, status: null, detail: friendly, retryable: false };
   } finally {
     clearTimeout(timer);
+    external?.removeEventListener('abort', onExternalAbort);
   }
 }
 
@@ -163,6 +200,10 @@ export async function generateImage(
   const shortPrompt = input.prompt.slice(0, 60).replace(/\s+/g, ' ');
 
   for (let i = 1; i <= MAX_RETRIES; i++) {
+    if (input.abortSignal?.aborted) {
+      return { image_url: null, image_error: 'Cancelled by client' };
+    }
+
     console.log(
       `[imageWorker] → POST ${WORKER_URL}/generate-image attempt=${i}/${MAX_RETRIES} model=${input.model} prompt="${shortPrompt}…"`
     );
@@ -182,7 +223,11 @@ export async function generateImage(
     console.log(
       `[imageWorker] ⏳ retry en ${Math.round(delay / 1000)}s (status=${result.status})`
     );
-    await sleep(delay);
+    try {
+      await sleep(delay, input.abortSignal);
+    } catch {
+      return { image_url: null, image_error: 'Cancelled by client' };
+    }
   }
 
   return { image_url: null, image_error: 'Max retries exceeded' };
