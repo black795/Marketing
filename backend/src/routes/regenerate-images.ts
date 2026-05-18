@@ -1,4 +1,4 @@
-7import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { generateImage } from '../services/python-worker/imageWorker';
 
 interface RegenerateSceneInput {
