@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import base64
+import logging
 import mimetypes
 import re
 import tempfile
+import traceback
 import uuid
 from pathlib import Path
 from typing import Any
@@ -16,6 +18,16 @@ from fastapi.concurrency import run_in_threadpool
 from API.manager import run_model
 
 from app.schemas import GenerateImageRequest, GenerateImageResponse
+
+logger = logging.getLogger("worker.generate_image")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("[%(asctime)s] [%(name)s] %(levelname)s — %(message)s")
+    )
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
 
 # Patrón para detectar status HTTP embebido en mensajes de error de Replicate
 # Ejemplo: "ReplicateError Details: status: 429 detail: Request was throttled..."
@@ -208,29 +220,59 @@ async def generate_image(payload: GenerateImageRequest) -> GenerateImageResponse
             ref_kw = REFERENCE_KW[py_name]
             kwargs[ref_kw] = [str(p) for p in temp_refs]
 
+        prompt_preview = final_prompt[:80].replace("\n", " ")
+        logger.info(
+            "→ run_model py_name=%s aspect=%s refs=%d quality_kw=%s prompt=\"%s…\"",
+            py_name,
+            aspect_ratio,
+            len(temp_refs),
+            quality_kwargs,
+            prompt_preview,
+        )
+
         try:
             result = await run_in_threadpool(run_model, py_name, **kwargs)
         except Exception as exc:
             message = str(exc)
             status_match = _STATUS_PATTERN.search(message)
             upstream_status = int(status_match.group(1)) if status_match else None
+            exc_type = type(exc).__name__
 
             # Propagar 429 (throttled) y 402 (out of credit) tal cual
             # para que el gateway pueda reintentar de forma inteligente.
             if upstream_status in (429, 402):
+                logger.warning(
+                    "✗ Replicate %s (%s): %s",
+                    upstream_status,
+                    exc_type,
+                    message,
+                )
                 raise HTTPException(
                     status_code=upstream_status,
                     detail=f"Replicate {upstream_status}: {message}",
                 ) from exc
 
+            # 502: error inesperado upstream. Logueamos stack completo para
+            # poder distinguir entre E005 sensitive, schema mismatch, timeout,
+            # rate limit no parseable, etc.
+            logger.error(
+                "✗ 502 Bad Gateway — model=%s exc_type=%s upstream_status=%s msg=%s",
+                py_name,
+                exc_type,
+                upstream_status,
+                message,
+            )
+            logger.error("Stack trace:\n%s", traceback.format_exc())
+
             raise HTTPException(
                 status_code=502,
-                detail=f"Replicate call failed: {message}",
+                detail=f"Replicate call failed [{exc_type}]: {message}",
             ) from exc
 
         image_url = _extract_url(result)
         model_id = result.get("model", py_name) if isinstance(result, dict) else py_name
 
+        logger.info("✓ 200 model=%s url=%s…", model_id, image_url[:60])
         return GenerateImageResponse(image_url=image_url, model=model_id)
 
     finally:

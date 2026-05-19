@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import PromptForm, { type PromptContext } from '@/components/PromptForm';
 import ProjectHeader from '@/components/ProjectHeader';
 import ScenesGrid from '@/components/ScenesGrid';
@@ -29,6 +29,7 @@ import {
 import {
   type AdvancedEdit,
   type SceneVersion,
+  makeRequestId,
   versionFromScene,
 } from '@/lib/scene-history';
 import type {
@@ -93,10 +94,48 @@ export default function Home() {
   const [historyByScene, setHistoryByScene] = useState<
     Map<number, SceneVersion[]>
   >(() => new Map());
-  const [singleRegenScene, setSingleRegenScene] = useState<number | null>(null);
-  const [singleRegenStatus, setSingleRegenStatus] = useState<string>('');
+
+  /**
+   * Máquina de estados de la regeneración de una sola escena:
+   *
+   *    idle ──start──▶ running ──cancel──▶ cancelling ──settle──▶ idle
+   *                       │
+   *                       └────────settle──▶ idle  (done/error)
+   *
+   * Garantías:
+   *   - El abort siempre se hace sobre el AbortController guardado en el
+   *     mismo objeto de estado (sin refs sueltas).
+   *   - Cada arranque genera un requestId nuevo. Las settles tardías de
+   *     requests anteriores no pueden contaminar el estado actual.
+   *   - Iniciar una nueva regen sin esperar el cleanup anterior es legal:
+   *     aborta lo viejo y arranca limpio.
+   */
+  type SingleRegenState =
+    | { kind: 'idle' }
+    | {
+        kind: 'running';
+        sceneNumber: number;
+        requestId: string;
+        message: string;
+        startedAt: number;
+        abort: AbortController;
+      }
+    | {
+        kind: 'cancelling';
+        sceneNumber: number;
+        requestId: string;
+        startedAt: number;
+      };
+
+  const [regenState, setRegenState] = useState<SingleRegenState>({
+    kind: 'idle',
+  });
+  const regenStateRef = useRef(regenState);
+  useEffect(() => {
+    regenStateRef.current = regenState;
+  }, [regenState]);
+
   const [singleRegenError, setSingleRegenError] = useState<string | null>(null);
-  const singleRegenAbortRef = useRef<AbortController | null>(null);
 
   interface PendingCompare {
     sceneNumber: number;
@@ -104,6 +143,7 @@ export default function Home() {
     newScene: Scene; // contiene image_url o image_error
     finalPrompt: string;
     edit: AdvancedEdit;
+    requestId: string;
   }
   const [pendingCompare, setPendingCompare] =
     useState<PendingCompare | null>(null);
@@ -112,7 +152,7 @@ export default function Home() {
   function handleReset() {
     streamAbortRef.current?.abort();
     regenAbortRef.current?.abort();
-    singleRegenAbortRef.current?.abort();
+    abortCurrentSingleRegen('reset');
     setPhase('idle');
     setScript(null);
     setScriptApproved(false);
@@ -130,10 +170,27 @@ export default function Home() {
     setStreamProgress(null);
     setStreamWarning(null);
     setHistoryByScene(new Map());
-    setSingleRegenScene(null);
-    setSingleRegenStatus('');
+    setRegenState({ kind: 'idle' });
     setSingleRegenError(null);
     setPendingCompare(null);
+  }
+
+  /** Aborta el regen single en curso (si lo hay). Sincrónico. */
+  function abortCurrentSingleRegen(reason: string) {
+    const curr = regenStateRef.current;
+    if (curr.kind === 'running') {
+      console.log('[regen] abort', {
+        requestId: curr.requestId,
+        sceneNumber: curr.sceneNumber,
+        reason,
+        elapsedMs: Date.now() - curr.startedAt,
+      });
+      try {
+        curr.abort.abort();
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   // ---------- Fase 1 → 2: guion ----------
@@ -498,7 +555,15 @@ export default function Home() {
     setHistoryByScene((prev) => {
       const next = new Map(prev);
       const existing = next.get(sceneNumber) ?? [];
-      next.set(sceneNumber, [...existing, versionFromScene(scene, source, label)]);
+      const newVersion = versionFromScene(scene, source, label);
+      next.set(sceneNumber, [...existing, newVersion]);
+      console.log('[history] version pushed', {
+        sceneNumber,
+        source,
+        label,
+        totalVersions: existing.length + 1,
+        hasImage: !!scene.image_url,
+      });
       return next;
     });
   }
@@ -532,16 +597,53 @@ export default function Home() {
     finalPrompt: string;
     edit: AdvancedEdit;
   }) {
-    if (!result || singleRegenScene !== null) return;
+    if (!result) return;
     const original = result.scenes.find((s) => s.scene_number === sceneNumber);
     if (!original) return;
 
-    setSingleRegenScene(sceneNumber);
-    setSingleRegenError(null);
-    setSingleRegenStatus('Conectando…');
+    // Si hay otra regen en curso (running/cancelling), la abortamos para
+    // que esta nueva petición no se quede esperando una settle ajena.
+    const prior = regenStateRef.current;
+    if (prior.kind === 'running') {
+      console.log('[regen] restarted — aborting prior', {
+        priorRequestId: prior.requestId,
+        elapsedMs: Date.now() - prior.startedAt,
+      });
+      try {
+        prior.abort.abort();
+      } catch {
+        /* ignore */
+      }
+    }
 
+    const requestId = makeRequestId();
     const abort = new AbortController();
-    singleRegenAbortRef.current = abort;
+    const startedAt = Date.now();
+
+    console.log('[regen] generation started', {
+      requestId,
+      sceneNumber,
+      promptLen: finalPrompt.length,
+    });
+
+    setSingleRegenError(null);
+    setRegenState({
+      kind: 'running',
+      sceneNumber,
+      requestId,
+      message: 'Conectando…',
+      startedAt,
+      abort,
+    });
+
+    // Helper: sólo aplica una settle si el requestId sigue siendo el actual.
+    const settle = (next: SingleRegenState) => {
+      setRegenState((curr) => {
+        if (curr.kind === 'idle') return curr;
+        if ('requestId' in curr && curr.requestId !== requestId) return curr;
+        return next;
+      });
+    };
 
     try {
       const refDataUrls = promptCtx?.referenceImages.map((r) => r.dataUrl) ?? [];
@@ -554,17 +656,35 @@ export default function Home() {
           aspectRatio: settings.aspectRatio,
           referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
         },
-        { onProgress: (m) => setSingleRegenStatus(m) },
+        {
+          onProgress: (m) => {
+            setRegenState((curr) => {
+              if (curr.kind === 'running' && curr.requestId === requestId) {
+                return { ...curr, message: m };
+              }
+              return curr;
+            });
+          },
+        },
         abort.signal
       );
 
-      // Construyo la "nueva" Scene (no la persisto aún — espera decisión del usuario).
+      console.log('[regen] generation completed', {
+        requestId,
+        sceneNumber,
+        elapsedMs: Date.now() - startedAt,
+        hasImage: !!r.image_url,
+      });
+
+      // Construyo la "nueva" Scene (no la persisto aún — espera decisión
+      // del usuario). Guardo edit.prompt como base — los overrides se
+      // recomponen cuando el usuario re-genere desde el edit panel.
       const newScene: Scene = {
         ...original,
         camera: edit.camera || original.camera,
         lighting: edit.lighting || original.lighting,
         emotion: edit.emotion || original.emotion,
-        image_prompt: finalPrompt,
+        image_prompt: edit.prompt,
         image_url: r.image_url,
         ...(r.image_error ? { image_error: r.image_error } : {}),
       };
@@ -575,30 +695,65 @@ export default function Home() {
         newScene,
         finalPrompt,
         edit,
+        requestId,
       });
     } catch (err) {
       if (err instanceof StreamCancelledError) {
+        console.log('[regen] generation cancelled', {
+          requestId,
+          sceneNumber,
+          elapsedMs: Date.now() - startedAt,
+        });
         setSingleRegenError('Generación cancelada.');
       } else {
+        console.error('[regen] generation failed', {
+          requestId,
+          sceneNumber,
+          elapsedMs: Date.now() - startedAt,
+          err,
+        });
         setSingleRegenError(
           err instanceof Error ? err.message : 'Error al regenerar la escena'
         );
       }
     } finally {
-      setSingleRegenScene(null);
-      setSingleRegenStatus('');
-      singleRegenAbortRef.current = null;
+      // Sólo vuelvo a idle si seguimos siendo el "owner" del estado.
+      // Si una nueva regen ya tomó el control, no la pisamos.
+      settle({ kind: 'idle' });
     }
   }
 
   function handleCancelSingleRegen() {
-    singleRegenAbortRef.current?.abort();
-    setSingleRegenStatus('Cancelando…');
+    const curr = regenStateRef.current;
+    if (curr.kind !== 'running') return;
+    console.log('[regen] cancel requested', {
+      requestId: curr.requestId,
+      sceneNumber: curr.sceneNumber,
+      elapsedMs: Date.now() - curr.startedAt,
+    });
+    try {
+      curr.abort.abort();
+    } catch {
+      /* ignore */
+    }
+    setRegenState({
+      kind: 'cancelling',
+      sceneNumber: curr.sceneNumber,
+      requestId: curr.requestId,
+      startedAt: curr.startedAt,
+    });
   }
 
   function handleCompareDecision(decision: CompareDecision) {
     if (!pendingCompare) return;
-    const { sceneNumber, originalScene, newScene } = pendingCompare;
+    const { sceneNumber, originalScene, newScene, requestId } = pendingCompare;
+
+    console.log('[compare] decision', {
+      requestId,
+      sceneNumber,
+      decision,
+      hadNewImage: !!newScene.image_url,
+    });
 
     if (decision === 'keep') {
       // No tocar la escena. Sólo cerrar.
@@ -640,6 +795,10 @@ export default function Home() {
     });
     if (updated && updated.image_url) {
       pushHistoryVersion(sceneNumber, updated, 'edit');
+      console.log('[scene] preview updated → new image active', {
+        sceneNumber,
+        requestId,
+      });
     }
     setPendingCompare(null);
   }
@@ -857,12 +1016,24 @@ export default function Home() {
         }
         regenerating={
           selectedScene !== null &&
-          singleRegenScene === selectedScene.scene_number
+          regenState.kind !== 'idle' &&
+          regenState.sceneNumber === selectedScene.scene_number
         }
-        regenStatus={singleRegenStatus}
+        regenStatus={
+          regenState.kind === 'running'
+            ? regenState.message
+            : regenState.kind === 'cancelling'
+            ? 'Cancelando…'
+            : ''
+        }
         regenError={singleRegenError}
+        cancelling={regenState.kind === 'cancelling'}
         onClose={() => {
-          if (singleRegenScene !== null) return;
+          // Permitir cerrar incluso si una regen quedó en cancelling/error.
+          if (regenState.kind === 'running') {
+            // Mejor abortar y cerrar a dejar la UI bloqueada.
+            abortCurrentSingleRegen('user-close');
+          }
           setSelectedScene(null);
           setSingleRegenError(null);
         }}

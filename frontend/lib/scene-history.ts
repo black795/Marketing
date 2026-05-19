@@ -31,6 +31,13 @@ function makeId(): string {
   return `v-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 }
 
+/** Short, sortable id for tracing un request de regeneración en logs. */
+export function makeRequestId(): string {
+  return `req-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 7)}`;
+}
+
 export function versionFromScene(
   scene: Scene,
   source: SceneVersionSource = 'initial',

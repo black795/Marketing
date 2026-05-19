@@ -25,6 +25,8 @@ interface SceneEditPanelProps {
   scene: Scene | null;
   history: SceneVersion[];
   regenerating: boolean;
+  /** True cuando ya pidieron cancelar — el cancel button queda disabled. */
+  cancelling?: boolean;
   regenStatus?: string;
   regenError?: string | null;
   onClose: () => void;
@@ -37,10 +39,24 @@ interface SceneEditPanelProps {
   onRestoreVersion: (sceneNumber: number, versionId: string) => void;
 }
 
+/**
+ * Identidad de la escena para detectar cuándo resetear el edit local.
+ *
+ * Usa SOLO scene_number — cambiar a una escena distinta resetea el edit.
+ * Que llegue una nueva imagen (image_url cambia, p. ej. tras Replace)
+ * NO resetea: el usuario conserva angle/intensity/style para iterar la
+ * misma dirección creativa sin re-tipear los chips.
+ */
+function computeSceneKey(scene: Scene | null): string {
+  if (!scene) return '-';
+  return String(scene.scene_number);
+}
+
 export default function SceneEditPanel({
   scene,
   history,
   regenerating,
+  cancelling = false,
   regenStatus,
   regenError,
   onClose,
@@ -55,29 +71,38 @@ export default function SceneEditPanel({
     scene ? initialEditFromScene(scene) : null
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const sceneKey = scene?.scene_number ?? -1;
+  const sceneKey = computeSceneKey(scene);
   const prevSceneKey = useRef(sceneKey);
 
   useEffect(() => {
     if (!scene) {
-      setEdit(null);
+      if (edit !== null) {
+        console.log('[edit-panel] session ended — clearing edit');
+        setEdit(null);
+      }
       return;
     }
     if (prevSceneKey.current !== sceneKey) {
+      console.log('[edit-panel] session started', {
+        sceneNumber: scene.scene_number,
+        sceneTitle: scene.scene_title,
+        promptLen: scene.image_prompt.length,
+      });
       setEdit(initialEditFromScene(scene));
       setTab('detail');
       prevSceneKey.current = sceneKey;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, sceneKey]);
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !regenerating) onClose();
+      if (e.key === 'Escape') onClose();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, regenerating]);
+  }, [open, onClose]);
 
   const baseEdit = useMemo(
     () => (scene ? initialEditFromScene(scene) : null),
@@ -87,11 +112,25 @@ export default function SceneEditPanel({
   const finalPrompt = edit ? composeFinalPrompt(edit) : '';
 
   function patchEdit(patch: Partial<AdvancedEdit>) {
-    setEdit((prev) => (prev ? { ...prev, ...patch } : prev));
+    setEdit((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      const changedKeys = Object.keys(patch);
+      console.log('[edit-panel] override updated', {
+        sceneNumber: scene?.scene_number,
+        keys: changedKeys,
+      });
+      return next;
+    });
   }
 
   function handleResetEdit() {
-    if (scene) setEdit(initialEditFromScene(scene));
+    if (scene) {
+      console.log('[edit-panel] edit reset to baseline', {
+        sceneNumber: scene.scene_number,
+      });
+      setEdit(initialEditFromScene(scene));
+    }
   }
 
   async function copyToClipboard(text: string, id: string) {
@@ -107,7 +146,7 @@ export default function SceneEditPanel({
   return (
     <>
       <div
-        onClick={regenerating ? undefined : onClose}
+        onClick={onClose}
         aria-hidden="true"
         className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-200 ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -137,12 +176,22 @@ export default function SceneEditPanel({
                   <h2 className="text-base font-semibold text-neutral-900">
                     {scene.scene_title}
                   </h2>
+                  <PhasePill
+                    regenerating={regenerating}
+                    cancelling={cancelling}
+                    error={regenError}
+                    dirty={dirty}
+                  />
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  disabled={regenerating}
                   aria-label="Cerrar panel de detalle"
+                  title={
+                    regenerating
+                      ? 'Cerrar — la generación en curso se cancelará'
+                      : 'Cerrar panel'
+                  }
                   className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <svg
@@ -182,7 +231,12 @@ export default function SceneEditPanel({
 
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {tab === 'detail' && (
-                <DetailTab scene={scene} />
+                <DetailTab
+                  scene={scene}
+                  regenerating={regenerating}
+                  regenStatus={regenStatus}
+                  cancelling={cancelling}
+                />
               )}
 
               {tab === 'edit' && (
@@ -219,12 +273,19 @@ export default function SceneEditPanel({
                   <ProgressBar
                     value={null}
                     showPercent={false}
-                    label={regenStatus ?? 'Regenerando…'}
+                    label={
+                      cancelling
+                        ? 'Cancelando…'
+                        : regenStatus ?? 'Regenerando…'
+                    }
                   />
                   <div className="flex justify-end">
                     <LoadingButton
                       variant="danger"
                       onClick={onCancelRegenerate}
+                      disabled={cancelling}
+                      loading={cancelling}
+                      loadingLabel="Cancelando…"
                     >
                       Cancelar generación
                     </LoadingButton>
@@ -236,7 +297,7 @@ export default function SceneEditPanel({
                     {tab === 'edit'
                       ? dirty
                         ? `Cambios sin aplicar · ${describeEdit(edit)}`
-                        : 'Edita parámetros para generar una nueva versión.'
+                        : `Parámetros aplicados · ${describeEdit(edit)} · pulsá para otra variante`
                       : `Versión actual · ${history.length} en historial`}
                   </p>
                   <div className="flex items-center gap-2">
@@ -250,19 +311,34 @@ export default function SceneEditPanel({
                     )}
                     <LoadingButton
                       variant="primary"
-                      disabled={tab === 'edit' && !dirty}
                       title={
-                        tab === 'edit' && !dirty
-                          ? 'Ajusta algún parámetro para generar una versión distinta'
-                          : 'Generar nueva versión y compararla con la actual'
+                        regenError
+                          ? 'Reintentar generación'
+                          : dirty
+                          ? 'Generar nueva versión y compararla con la actual'
+                          : 'Generar otra variante con los mismos parámetros'
                       }
-                      onClick={() =>
+                      onClick={() => {
+                        console.log('[edit-panel] generation requested', {
+                          sceneNumber: scene.scene_number,
+                          tab,
+                          dirty,
+                          finalPromptLen: finalPrompt.length,
+                          edit: {
+                            camera: edit.camera,
+                            lighting: edit.lighting,
+                            emotion: edit.emotion,
+                            style: edit.style,
+                            angle: edit.angle,
+                            intensity: edit.intensity,
+                          },
+                        });
                         onRegenerate({
                           sceneNumber: scene.scene_number,
                           finalPrompt,
                           edit,
-                        })
-                      }
+                        });
+                      }}
                       leftIcon={
                         <svg
                           width="16"
@@ -281,8 +357,12 @@ export default function SceneEditPanel({
                         </svg>
                       }
                     >
-                      {tab === 'edit'
-                        ? 'Generar versión nueva'
+                      {regenError
+                        ? 'Reintentar'
+                        : tab === 'edit'
+                        ? dirty
+                          ? 'Generar versión nueva'
+                          : 'Generar otra variante'
                         : 'Regenerar esta escena'}
                     </LoadingButton>
                   </div>
@@ -329,7 +409,17 @@ function TabButton({
   );
 }
 
-function DetailTab({ scene }: { scene: Scene }) {
+function DetailTab({
+  scene,
+  regenerating,
+  regenStatus,
+  cancelling,
+}: {
+  scene: Scene;
+  regenerating: boolean;
+  regenStatus?: string;
+  cancelling?: boolean;
+}) {
   return (
     <>
       <div
@@ -340,7 +430,9 @@ function DetailTab({ scene }: { scene: Scene }) {
           <img
             src={scene.image_url}
             alt={scene.scene_title}
-            className="h-full w-full object-contain"
+            className={`h-full w-full object-contain transition ${
+              regenerating ? 'opacity-40 blur-[1px]' : ''
+            }`}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-neutral-500">
@@ -351,6 +443,12 @@ function DetailTab({ scene }: { scene: Scene }) {
               </span>
             ) : null}
           </div>
+        )}
+        {regenerating && (
+          <RegeneratingOverlay
+            cancelling={!!cancelling}
+            status={regenStatus}
+          />
         )}
       </div>
 
@@ -724,4 +822,131 @@ function labelForSource(source: SceneVersion['source']): string {
     case 'restore':
       return 'Restaurada';
   }
+}
+
+// =====================================================================
+// Status pill + overlay — feedback visual del estado de regen
+// =====================================================================
+
+type PhaseTag = 'idle' | 'editing' | 'generating' | 'cancelling' | 'failed';
+
+function derivePhase(args: {
+  regenerating: boolean;
+  cancelling: boolean;
+  error?: string | null;
+  dirty: boolean;
+}): PhaseTag {
+  if (args.cancelling) return 'cancelling';
+  if (args.regenerating) return 'generating';
+  if (args.error) return 'failed';
+  if (args.dirty) return 'editing';
+  return 'idle';
+}
+
+function PhasePill({
+  regenerating,
+  cancelling,
+  error,
+  dirty,
+}: {
+  regenerating: boolean;
+  cancelling: boolean;
+  error?: string | null;
+  dirty: boolean;
+}) {
+  const phase = derivePhase({ regenerating, cancelling, error, dirty });
+
+  const cfg: Record<
+    PhaseTag,
+    { label: string; tone: string; dot?: 'pulse' | 'static' }
+  > = {
+    idle: {
+      label: 'Idle',
+      tone: 'bg-neutral-100 text-neutral-500',
+      dot: 'static',
+    },
+    editing: {
+      label: 'Editing',
+      tone: 'bg-brand-yellow/40 text-neutral-800',
+      dot: 'static',
+    },
+    generating: {
+      label: 'Generating',
+      tone: 'bg-brand-pink/10 text-brand-pink',
+      dot: 'pulse',
+    },
+    cancelling: {
+      label: 'Cancelling',
+      tone: 'bg-amber-100 text-amber-800',
+      dot: 'pulse',
+    },
+    failed: {
+      label: 'Failed',
+      tone: 'bg-red-100 text-red-700',
+      dot: 'static',
+    },
+  };
+
+  const c = cfg[phase];
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${c.tone}`}
+    >
+      {c.dot && (
+        <span
+          aria-hidden="true"
+          className={`inline-block h-1.5 w-1.5 rounded-full ${
+            c.dot === 'pulse' ? 'animate-pulse' : ''
+          } ${
+            phase === 'generating'
+              ? 'bg-brand-pink'
+              : phase === 'cancelling'
+              ? 'bg-amber-600'
+              : phase === 'failed'
+              ? 'bg-red-600'
+              : phase === 'editing'
+              ? 'bg-neutral-700'
+              : 'bg-neutral-400'
+          }`}
+        />
+      )}
+      {c.label}
+    </span>
+  );
+}
+
+function RegeneratingOverlay({
+  cancelling,
+  status,
+}: {
+  cancelling: boolean;
+  status?: string;
+}) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/55 backdrop-blur-[1px]">
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`text-brand-pink ${cancelling ? 'opacity-50' : 'animate-spin'}`}
+        aria-hidden="true"
+      >
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-800">
+        {cancelling
+          ? 'Cancelando…'
+          : status && status.length > 0
+          ? status
+          : 'Generando nueva versión…'}
+      </p>
+    </div>
+  );
 }

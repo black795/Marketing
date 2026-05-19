@@ -14,7 +14,7 @@
 // El recognizer del navegador a veces se corta solo a los ~60s; el hook
 // lo reinicia automáticamente mientras esté en estado `listening`.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { appendCleanedChunk, cleanSpokenChunk } from './cleanPrompt';
 
 export type VoiceStatus =
@@ -76,19 +76,33 @@ export interface UseVoiceDictationResult {
 export function useVoiceDictation(
   opts: UseVoiceDictationOptions = {}
 ): UseVoiceDictationResult {
-  const Ctor = useMemo(() => getRecognitionCtor(), []);
-  const [status, setStatus] = useState<VoiceStatus>(
-    Ctor ? 'idle' : 'unsupported'
-  );
+  // Importante: NO consultar `window` durante el render inicial — eso
+  // genera mismatch SSR vs cliente y dispara hydration errors que, a su
+  // vez, desmontan en cascada los streams SSE en curso. Empezamos en
+  // 'idle' y detectamos soporte tras el mount.
+  const [status, setStatus] = useState<VoiceStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [finalText, setFinalText] = useState<string>(opts.baseText ?? '');
   const [interimText, setInterimText] = useState<string>('');
 
+  const ctorRef = useRef<ReturnType<typeof getRecognitionCtor>>(null);
   const recognizerRef = useRef<SpeechRecognitionLike | null>(null);
   const wantActiveRef = useRef(false); // true → mantener corriendo (auto-restart)
   const finalTextRef = useRef(finalText);
   const onTextRef = useRef(opts.onText);
-  const langRef = useRef(opts.lang ?? defaultLang());
+  const langRef = useRef(opts.lang ?? 'es-ES');
+
+  // Detección de soporte después del mount.
+  useEffect(() => {
+    const ctor = getRecognitionCtor();
+    ctorRef.current = ctor;
+    if (!ctor) {
+      setStatus('unsupported');
+    }
+    // Si la lang depende de navigator y no la pasaron explícitamente.
+    if (!opts.lang) langRef.current = defaultLang();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mantener refs sincronizadas.
   useEffect(() => {
@@ -120,6 +134,7 @@ export function useVoiceDictation(
   }, []);
 
   const createRecognizer = useCallback((): SpeechRecognitionLike | null => {
+    const Ctor = ctorRef.current;
     if (!Ctor) return null;
     const rec = new Ctor();
     rec.lang = langRef.current;
@@ -203,10 +218,10 @@ export function useVoiceDictation(
     };
 
     return rec;
-  }, [Ctor]);
+  }, []);
 
   const start = useCallback(() => {
-    if (!Ctor) {
+    if (!ctorRef.current) {
       setStatus('unsupported');
       return;
     }
@@ -226,7 +241,7 @@ export function useVoiceDictation(
         err instanceof Error ? err.message : 'No se pudo iniciar el micrófono'
       );
     }
-  }, [Ctor, createRecognizer, status]);
+  }, [createRecognizer, status]);
 
   const stop = useCallback(() => {
     wantActiveRef.current = false;
