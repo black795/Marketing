@@ -11,6 +11,7 @@ interface ProjectHeaderProps {
   regenerating?: boolean;
   onReset?: () => void;
   onToggleSelectionMode?: () => void;
+  onContinueToVideo?: () => void;
 }
 
 export default function ProjectHeader({
@@ -19,6 +20,7 @@ export default function ProjectHeader({
   regenerating = false,
   onReset,
   onToggleSelectionMode,
+  onContinueToVideo,
 }: ProjectHeaderProps) {
   const characters = project.characters ?? [];
   const hasAnyImage = project.scenes.some((s) => !!s.image_url);
@@ -100,7 +102,10 @@ export default function ProjectHeader({
 
           <DownloadAllImagesButton project={project} />
           <ExportJsonButton project={project} />
-          <ApproveContinueButton disabled={regenerating || !hasAnyImage} />
+          <ApproveContinueButton
+            disabled={regenerating || selectionMode || !hasAnyImage}
+            onContinue={onContinueToVideo}
+          />
         </div>
       </div>
     </header>

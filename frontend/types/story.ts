@@ -92,3 +92,36 @@ export interface RegenerateImagesResponse {
   model: string;
   results: RegenerateImageResult[];
 }
+
+// ============================================================
+// Video (Kling v3 family)
+// ============================================================
+
+export type VideoModel = 'kling-v3-omni' | 'kling-v3';
+
+export interface VideoSceneInput {
+  scene_number: number;
+  image_url: string;
+  video_prompt: string;
+}
+
+export interface VideoSceneOutput {
+  scene_number: number;
+  image_url?: string | null;
+  video_prompt: string;
+  video_url: string | null;
+  /** URL persistente servida por el backend (sobrevive a la expiración de Replicate). */
+  local_url?: string | null;
+  video_error?: string;
+}
+
+export interface GenerateVideosFromScenesRequest {
+  model: VideoModel;
+  projectId?: string;
+  duration: number;
+  resolution: '720p' | '1080p';
+  sound: boolean;
+  aspectRatio?: string;
+  scenes: VideoSceneInput[];
+  referenceImageUrls?: string[];
+}

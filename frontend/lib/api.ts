@@ -9,6 +9,8 @@ import type {
   RegenerateImagesResponse,
   RegenerateImageResult,
   Scene,
+  GenerateVideosFromScenesRequest,
+  VideoSceneOutput,
 } from '@/types/story';
 
 const BACKEND_URL =
@@ -401,4 +403,127 @@ export async function streamRegenerateImages(
     (a, b) => a.scene_number - b.scene_number
   );
   return { status, results, failed };
+}
+
+// =====================================================================
+// SSE: video generation (Kling v3 family)
+// =====================================================================
+
+export interface VideoStreamCallbacks {
+  onStart?: (info: {
+    total: number;
+    model: string;
+    duration: number;
+    resolution: string;
+  }) => void;
+  onSceneStart?: (info: {
+    scene_number: number;
+    index: number;
+    total: number;
+  }) => void;
+  onScene?: (info: {
+    scene: VideoSceneOutput;
+    index: number;
+    total: number;
+    progress: number;
+  }) => void;
+  onWarning?: (message: string) => void;
+}
+
+export interface VideoStreamResult {
+  status: 'done' | 'cancelled';
+  scenes: VideoSceneOutput[];
+  failed: number;
+}
+
+export async function streamGenerateVideosFromScenes(
+  payload: GenerateVideosFromScenesRequest,
+  callbacks: VideoStreamCallbacks,
+  signal: AbortSignal
+): Promise<VideoStreamResult> {
+  const response = await fetch(
+    `${BACKEND_URL}/api/generate-videos-from-scenes?stream=1`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify(payload),
+      signal,
+    }
+  );
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  const scenesById = new Map<number, VideoSceneOutput>();
+  let status: 'done' | 'cancelled' = 'cancelled';
+  let failed = 0;
+
+  try {
+    for await (const { event, data } of parseSseStream(response.body)) {
+      switch (event) {
+        case 'start':
+          callbacks.onStart?.({
+            total: data.total,
+            model: data.model,
+            duration: data.duration,
+            resolution: data.resolution,
+          });
+          break;
+        case 'scene-start':
+          callbacks.onSceneStart?.({
+            scene_number: data.scene_number,
+            index: data.index,
+            total: data.total,
+          });
+          break;
+        case 'scene-done':
+        case 'scene-error':
+          scenesById.set(
+            data.scene.scene_number,
+            data.scene as VideoSceneOutput
+          );
+          callbacks.onScene?.({
+            scene: data.scene as VideoSceneOutput,
+            index: data.index,
+            total: data.total,
+            progress: data.progress,
+          });
+          break;
+        case 'warning':
+          callbacks.onWarning?.(String(data?.message ?? ''));
+          break;
+        case 'cancelled':
+          status = 'cancelled';
+          if (Array.isArray(data?.scenes)) {
+            for (const s of data.scenes as VideoSceneOutput[]) {
+              scenesById.set(s.scene_number, s);
+            }
+          }
+          break;
+        case 'done':
+          status = 'done';
+          failed = Number(data?.failed ?? 0);
+          if (Array.isArray(data?.scenes)) {
+            for (const s of data.scenes as VideoSceneOutput[]) {
+              scenesById.set(s.scene_number, s);
+            }
+          }
+          break;
+      }
+    }
+  } catch (err) {
+    if ((err as any)?.name === 'AbortError') {
+      throw new StreamCancelledError();
+    }
+    throw err;
+  }
+
+  const scenes = Array.from(scenesById.values()).sort(
+    (a, b) => a.scene_number - b.scene_number
+  );
+  return { status, scenes, failed };
 }

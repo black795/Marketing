@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from API.manager import available_models  # noqa: E402
 
 from app.routes.generate_image import router as generate_image_router  # noqa: E402
+from app.routes.generate_video import router as generate_video_router  # noqa: E402
 from app.schemas import HealthResponse  # noqa: E402
 
 app = FastAPI(title="Tim Koda — Image Worker", version="0.1.0")
@@ -36,3 +37,4 @@ def health() -> HealthResponse:
 
 
 app.include_router(generate_image_router)
+app.include_router(generate_video_router)

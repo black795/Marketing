@@ -37,6 +37,28 @@ class GenerateImageResponse(BaseModel):
     model: str
 
 
+class GenerateVideoRequest(BaseModel):
+    model: str = Field(..., description="Logical model: kling-v3-omni | kling-v3")
+    prompt: str
+    image_url: Optional[str] = Field(
+        default=None,
+        description="Starting image for image-to-video (data: or http URL).",
+    )
+    reference_image_urls: list[str] = Field(
+        default_factory=list,
+        description="Identity references (sólo kling-v3-omni, máx 7).",
+    )
+    aspect_ratio: str = Field(default="9:16")
+    duration: int = Field(default=5, ge=3, le=15)
+    resolution: str = Field(default="1080p")
+    sound: bool = Field(default=True)
+
+
+class GenerateVideoResponse(BaseModel):
+    video_url: str
+    model: str
+
+
 class HealthResponse(BaseModel):
     status: str
     models: list[str]

@@ -15,10 +15,14 @@ import LoadingButton from '@/components/loading/LoadingButton';
 import ProgressBar from '@/components/loading/ProgressBar';
 import Spinner from '@/components/loading/Spinner';
 import type { SceneStreamStatus } from '@/components/SceneCard';
+import VideoReviewPanel, {
+  type VideoGenerationDecision,
+} from '@/components/VideoReviewPanel';
 import {
   generateScript,
   regenerateSingleScene,
   streamGenerateImagesFromScript,
+  streamGenerateVideosFromScenes,
   streamRegenerateImages,
   StreamCancelledError,
 } from '@/lib/api';
@@ -36,6 +40,7 @@ import type {
   GenerateScriptResponse,
   GenerateStoryResponse,
   Scene,
+  VideoSceneOutput,
 } from '@/types/story';
 
 type Phase =
@@ -43,7 +48,10 @@ type Phase =
   | 'generating-script'
   | 'script-review'
   | 'generating-images'
-  | 'result';
+  | 'result'
+  | 'video-review'
+  | 'generating-videos'
+  | 'video-result';
 
 interface StreamProgress {
   total: number;
@@ -89,6 +97,21 @@ export default function Home() {
   );
   const [streamWarning, setStreamWarning] = useState<string | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
+
+  // ---------- Estado de video (fase 4) ----------
+  const [videoDecision, setVideoDecision] =
+    useState<VideoGenerationDecision | null>(null);
+  const [videoScenes, setVideoScenes] = useState<VideoSceneOutput[]>([]);
+  const [videoStatusByNumber, setVideoStatusByNumber] = useState<
+    Map<number, SceneStreamStatus>
+  >(() => new Map());
+  const [videoStreamProgress, setVideoStreamProgress] =
+    useState<StreamProgress | null>(null);
+  const [videoStreamWarning, setVideoStreamWarning] = useState<string | null>(
+    null
+  );
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const videoStreamAbortRef = useRef<AbortController | null>(null);
 
   // ---------- Edición avanzada por escena ----------
   const [historyByScene, setHistoryByScene] = useState<
@@ -152,6 +175,7 @@ export default function Home() {
   function handleReset() {
     streamAbortRef.current?.abort();
     regenAbortRef.current?.abort();
+    videoStreamAbortRef.current?.abort();
     abortCurrentSingleRegen('reset');
     setPhase('idle');
     setScript(null);
@@ -173,6 +197,12 @@ export default function Home() {
     setRegenState({ kind: 'idle' });
     setSingleRegenError(null);
     setPendingCompare(null);
+    setVideoDecision(null);
+    setVideoScenes([]);
+    setVideoStatusByNumber(new Map());
+    setVideoStreamProgress(null);
+    setVideoStreamWarning(null);
+    setVideoError(null);
   }
 
   /** Aborta el regen single en curso (si lo hay). Sincrónico. */
@@ -383,6 +413,207 @@ export default function Home() {
     setStreamProgress((p) =>
       p ? { ...p, message: 'Cancelando…' } : p
     );
+  }
+
+  // ---------- Fase 4 → 5: video ----------
+  function handleContinueToVideoReview() {
+    if (!result) return;
+    setVideoError(null);
+    setVideoStreamWarning(null);
+    setPhase('video-review');
+  }
+
+  function handleBackToImages() {
+    setPhase('result');
+  }
+
+  async function handleStartVideoGeneration(decision: VideoGenerationDecision) {
+    if (!result) return;
+    setVideoError(null);
+    setVideoStreamWarning(null);
+
+    // Consolidar decision con la previa: las escenas que NO están en este run
+    // se mantienen (para que cuando el usuario vuelva a video-review, las
+    // recuerde correctamente).
+    const newSceneNumbers = new Set(decision.scenes.map((s) => s.scene_number));
+    const mergedDecisionScenes = [
+      ...(videoDecision?.scenes ?? []).filter(
+        (s) => !newSceneNumbers.has(s.scene_number)
+      ),
+      ...decision.scenes,
+    ].sort((a, b) => a.scene_number - b.scene_number);
+    const consolidatedDecision: VideoGenerationDecision = {
+      ...decision,
+      scenes: mergedDecisionScenes,
+    };
+    setVideoDecision(consolidatedDecision);
+
+    // Seed videoScenes: placeholders sólo para las que se van a generar.
+    // Las del videoScenes previo que NO se regeneran se preservan tal cual
+    // (con su video_url, local_url y posible video_error).
+    const placeholders: VideoSceneOutput[] = decision.scenes.map((s) => ({
+      scene_number: s.scene_number,
+      image_url: s.image_url,
+      video_prompt: s.video_prompt,
+      video_url: null,
+    }));
+    const keptFromPrevious = videoScenes.filter(
+      (s) => !newSceneNumbers.has(s.scene_number)
+    );
+    const initial: VideoSceneOutput[] = [...keptFromPrevious, ...placeholders].sort(
+      (a, b) => a.scene_number - b.scene_number
+    );
+    setVideoScenes(initial);
+
+    const initialStatus = new Map<number, SceneStreamStatus>();
+    for (const s of initial) {
+      if (newSceneNumbers.has(s.scene_number)) {
+        initialStatus.set(s.scene_number, 'pending');
+      } else {
+        initialStatus.set(s.scene_number, s.video_url ? 'done' : 'error');
+      }
+    }
+    setVideoStatusByNumber(initialStatus);
+
+    setVideoStreamProgress({
+      total: decision.scenes.length,
+      completed: 0,
+      currentSceneNumber: null,
+      message: 'Conectando con el worker…',
+    });
+
+    setPhase('generating-videos');
+
+    const abort = new AbortController();
+    videoStreamAbortRef.current = abort;
+
+    try {
+      const refDataUrls =
+        decision.model === 'kling-v3-omni'
+          ? promptCtx?.referenceImages.map((r) => r.dataUrl) ?? []
+          : [];
+
+      const outcome = await streamGenerateVideosFromScenes(
+        {
+          model: decision.model,
+          projectId: result.projectId,
+          duration: decision.duration,
+          resolution: decision.resolution,
+          sound: decision.sound,
+          aspectRatio: decision.aspectRatio,
+          scenes: decision.scenes,
+          referenceImageUrls:
+            refDataUrls.length > 0 ? refDataUrls : undefined,
+        },
+        {
+          onStart: ({ total }) => {
+            setVideoStreamProgress({
+              total,
+              completed: 0,
+              currentSceneNumber: null,
+              message: 'Encolando videos…',
+            });
+          },
+          onSceneStart: ({ scene_number, index, total }) => {
+            setVideoStatusByNumber((prev) => {
+              const next = new Map(prev);
+              next.set(scene_number, 'active');
+              return next;
+            });
+            setVideoStreamProgress({
+              total,
+              completed: index,
+              currentSceneNumber: scene_number,
+              message: `Generando video ${index + 1}/${total} (escena ${scene_number})…`,
+            });
+          },
+          onScene: ({ scene, index, total }) => {
+            setVideoScenes((prev) => {
+              const idx = prev.findIndex(
+                (s) => s.scene_number === scene.scene_number
+              );
+              if (idx < 0) return [...prev, scene];
+              const next = prev.slice();
+              next[idx] = scene;
+              return next;
+            });
+            setVideoStatusByNumber((prev) => {
+              const next = new Map(prev);
+              next.set(
+                scene.scene_number,
+                scene.video_url ? 'done' : 'error'
+              );
+              return next;
+            });
+            setVideoStreamProgress({
+              total,
+              completed: index,
+              currentSceneNumber: null,
+              message:
+                index === total
+                  ? 'Finalizando…'
+                  : `Video ${index}/${total} listo`,
+            });
+          },
+          onWarning: (msg) => setVideoStreamWarning(msg),
+        },
+        abort.signal
+      );
+
+      if (outcome.status === 'cancelled') {
+        setVideoError('Generación de videos cancelada.');
+        setPhase('video-review');
+      } else {
+        setPhase('video-result');
+      }
+    } catch (err) {
+      if (err instanceof StreamCancelledError) {
+        setVideoError('Generación de videos cancelada.');
+      } else {
+        setVideoError(
+          err instanceof Error
+            ? err.message
+            : 'No se pudieron generar los videos'
+        );
+      }
+      setPhase('video-review');
+    } finally {
+      videoStreamAbortRef.current = null;
+      setVideoStreamProgress(null);
+    }
+  }
+
+  function handleCancelVideoStream() {
+    videoStreamAbortRef.current?.abort();
+    setVideoStreamProgress((p) =>
+      p ? { ...p, message: 'Cancelando…' } : p
+    );
+  }
+
+  function handleBackToVideoReview() {
+    setPhase('video-review');
+  }
+
+  /**
+   * Reintentar UNA sola escena (botón en la card cuando hay video_error).
+   * Reusa el flujo de streaming con scenes=[esa] y el merge en
+   * handleStartVideoGeneration preserva las demás.
+   */
+  async function handleRetryScene(sceneNumber: number) {
+    if (!videoDecision) return;
+    const sceneOut = videoScenes.find((s) => s.scene_number === sceneNumber);
+    if (!sceneOut?.image_url) return;
+    const retryDecision: VideoGenerationDecision = {
+      ...videoDecision,
+      scenes: [
+        {
+          scene_number: sceneNumber,
+          image_url: sceneOut.image_url,
+          video_prompt: sceneOut.video_prompt,
+        },
+      ],
+    };
+    await handleStartVideoGeneration(retryDecision);
   }
 
   // ---------- Fase 5: selección + regeneración de imágenes ----------
@@ -919,6 +1150,7 @@ export default function Home() {
               regenerating={regenerating}
               onReset={handleReset}
               onToggleSelectionMode={toggleSelectionMode}
+              onContinueToVideo={handleContinueToVideoReview}
             />
 
             <details className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
@@ -961,6 +1193,46 @@ export default function Home() {
               />
             </section>
           </div>
+        )}
+
+        {phase === 'video-review' && result && (
+          <VideoReviewPanel
+            scenes={result.scenes}
+            hasReferenceImages={
+              (promptCtx?.referenceImages.length ?? 0) > 0
+            }
+            aspectRatio={settings.aspectRatio}
+            initialDecision={videoDecision}
+            previousResults={videoScenes}
+            onBack={handleBackToImages}
+            onConfirm={handleStartVideoGeneration}
+          />
+        )}
+
+        {phase === 'generating-videos' && (
+          <div className="space-y-6">
+            <StreamingProgressCard
+              progress={videoStreamProgress}
+              warning={videoStreamWarning}
+              onCancel={handleCancelVideoStream}
+              title="Generando videos en serie"
+              fallbackMessage="Generando videos…"
+            />
+            <VideoStreamGrid
+              scenes={videoScenes}
+              statusByNumber={videoStatusByNumber}
+            />
+          </div>
+        )}
+
+        {phase === 'video-result' && (
+          <VideoResultView
+            scenes={videoScenes}
+            error={videoError}
+            onBackToReview={handleBackToVideoReview}
+            onReset={handleReset}
+            onRetryScene={handleRetryScene}
+          />
         )}
       </div>
 
@@ -1094,7 +1366,8 @@ function PhaseStepper({ phase }: { phase: Phase }) {
     { key: ['idle', 'generating-script'], label: '1 · Prompts' },
     { key: 'script-review', label: '2 · Guion' },
     { key: ['generating-images', 'result'], label: '3 · Imágenes' },
-    { key: 'result', label: '4 · Video (próx.)' },
+    { key: 'video-review', label: '4 · Revisar' },
+    { key: ['generating-videos', 'video-result'], label: '5 · Video' },
   ];
 
   function isActive(key: Phase | Phase[]): boolean {
@@ -1167,16 +1440,20 @@ function StreamingProgressCard({
   progress,
   warning,
   onCancel,
+  title = 'Generando imágenes en tiempo real',
+  fallbackMessage = 'Generando imágenes…',
 }: {
   progress: StreamProgress | null;
   warning: string | null;
   onCancel: () => void;
+  title?: string;
+  fallbackMessage?: string;
 }) {
   const value =
     progress && progress.total > 0
       ? progress.completed / progress.total
       : null;
-  const message = progress?.message ?? 'Generando imágenes…';
+  const message = progress?.message ?? fallbackMessage;
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
@@ -1185,7 +1462,7 @@ function StreamingProgressCard({
           <div className="flex items-center gap-3">
             <Spinner size={18} className="text-brand-pink" />
             <p className="text-sm font-semibold text-neutral-800">
-              Generando imágenes en tiempo real
+              {title}
             </p>
           </div>
           <p className="mt-1 text-xs text-neutral-500">{message}</p>
@@ -1229,6 +1506,265 @@ function StreamingProgressCard({
             Cancelar generación
           </LoadingButton>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoStreamGrid({
+  scenes,
+  statusByNumber,
+}: {
+  scenes: VideoSceneOutput[];
+  statusByNumber: Map<number, SceneStreamStatus>;
+}) {
+  if (scenes.length === 0) return null;
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          Videos en vivo
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {scenes.map((s) => {
+          const status = statusByNumber.get(s.scene_number) ?? 'pending';
+          return (
+            <div
+              key={s.scene_number}
+              className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
+            >
+              <div className="relative aspect-[9/16] w-full bg-neutral-100">
+                {s.video_url || s.local_url ? (
+                  <video
+                    src={s.local_url || s.video_url!}
+                    controls
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                ) : s.image_url ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.image_url}
+                      alt={`Escena ${s.scene_number} (frame inicial)`}
+                      className="h-full w-full object-cover opacity-60"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {status === 'active' && (
+                        <Spinner size={28} className="text-brand-pink" />
+                      )}
+                      {status === 'error' && (
+                        <span className="rounded bg-red-600/90 px-2 py-1 text-xs font-semibold text-white">
+                          Falló
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-neutral-400">
+                    Sin imagen
+                  </div>
+                )}
+                <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-brand-pink px-2 py-0.5 text-xs font-bold text-white shadow">
+                  #{s.scene_number}
+                </span>
+              </div>
+              <div className="p-3">
+                <p className="line-clamp-2 text-xs text-neutral-600">
+                  {s.video_prompt}
+                </p>
+                {s.video_error && (
+                  <p className="mt-2 rounded bg-red-50 px-2 py-1 text-[11px] text-red-700">
+                    {s.video_error}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function VideoResultView({
+  scenes,
+  error,
+  onBackToReview,
+  onReset,
+  onRetryScene,
+}: {
+  scenes: VideoSceneOutput[];
+  error: string | null;
+  onBackToReview: () => void;
+  onReset: () => void;
+  onRetryScene: (sceneNumber: number) => void;
+}) {
+  const success = scenes.filter((s) => s.video_url);
+  const failed = scenes.filter((s) => !s.video_url);
+
+  function preferredUrl(s: VideoSceneOutput): string | null {
+    // Preferimos local_url (sobrevive la expiración de Replicate).
+    return s.local_url || s.video_url || null;
+  }
+
+  function downloadAll() {
+    success.forEach((s, idx) => {
+      const url = preferredUrl(s);
+      if (!url) return;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scene_${String(s.scene_number).padStart(2, '0')}.mp4`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      // Pequeño escalonado para evitar bloqueos del browser.
+      setTimeout(() => {
+        a.click();
+        a.remove();
+      }, idx * 250);
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-neutral-900">
+              Videos generados
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              {success.length} de {scenes.length} listos
+              {failed.length > 0 ? ` · ${failed.length} fallidos` : ''}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onBackToReview}
+              className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+            >
+              ← Volver a editar
+            </button>
+            <LoadingButton
+              variant="primary"
+              onClick={downloadAll}
+              disabled={success.length === 0}
+              aria-label="Descargar todos los videos"
+            >
+              Descargar todos
+            </LoadingButton>
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-600"
+            >
+              Empezar de cero
+            </button>
+          </div>
+        </div>
+        {error && (
+          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {scenes.map((s) => {
+          const playUrl = preferredUrl(s);
+          return (
+            <div
+              key={s.scene_number}
+              className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
+            >
+              <div className="relative aspect-[9/16] w-full bg-neutral-900">
+                {playUrl ? (
+                  <video
+                    src={playUrl}
+                    controls
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                ) : s.image_url ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={s.image_url}
+                      alt={`Escena ${s.scene_number}`}
+                      className="h-full w-full object-cover opacity-50"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="rounded bg-red-600/90 px-2 py-1 text-xs font-semibold text-white">
+                        Sin video
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+                <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-brand-pink px-2 py-0.5 text-xs font-bold text-white shadow">
+                  #{s.scene_number}
+                </span>
+                {s.local_url && (
+                  <span
+                    title="Servido desde el backend local — no expira"
+                    className="absolute right-2 top-2 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow"
+                  >
+                    ✓ Local
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 p-3">
+                <p className="line-clamp-2 text-xs text-neutral-600">
+                  {s.video_prompt}
+                </p>
+                {playUrl ? (
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={playUrl}
+                      download={`scene_${String(s.scene_number).padStart(2, '0')}.mp4`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-pink hover:underline"
+                    >
+                      ↓ Descargar
+                    </a>
+                    {s.video_url && s.local_url && s.video_url !== s.local_url && (
+                      <a
+                        href={s.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-neutral-400 hover:text-neutral-600"
+                      >
+                        (origen Replicate)
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {s.video_error && (
+                      <p className="rounded bg-red-50 px-2 py-1 text-[11px] text-red-700">
+                        {s.video_error}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onRetryScene(s.scene_number)}
+                      className="inline-flex items-center gap-1 rounded-md border border-brand-pink bg-white px-2 py-1 text-xs font-semibold text-brand-pink hover:bg-pink-50"
+                    >
+                      ↻ Reintentar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

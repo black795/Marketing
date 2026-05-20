@@ -56,6 +56,8 @@ def available_models() -> list[str]:
 # Claude Code agregará aquí cada nuevo módulo automáticamente.
 from API import nano_banana_pro  # noqa: F401, E402
 from API import gpt_image_2  # noqa: F401, E402
+from API import kling_v3_omni  # noqa: F401, E402
+from API import kling_v3  # noqa: F401, E402
 
 
 if __name__ == "__main__":
