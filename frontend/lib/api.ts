@@ -12,6 +12,11 @@ import type {
   GenerateVideosFromScenesRequest,
   VideoSceneOutput,
 } from '@/types/story';
+import type {
+  AvatarGenerationRequest,
+  AvatarPhase,
+  AvatarResult,
+} from '@/types/avatar';
 import { dlog, dwarn, derror, traceAbortSignal } from './debug-log';
 
 const BACKEND_URL =
@@ -570,4 +575,150 @@ export async function streamGenerateVideosFromScenes(
     (a, b) => a.scene_number - b.scene_number
   );
   return { status, scenes, failed };
+}
+
+// =====================================================================
+// SSE: avatar generation (prunaai/p-video-avatar)
+// =====================================================================
+
+export interface AvatarStreamCallbacks {
+  onStart?: (info: {
+    jobId: string;
+    model: string;
+    resolution: string;
+    mode: string;
+  }) => void;
+  /** Estado en vivo del render (processing → rendering). */
+  onStatus?: (info: {
+    phase: AvatarPhase;
+    elapsedMs: number;
+    message: string;
+  }) => void;
+  onWarning?: (message: string) => void;
+}
+
+export type AvatarStreamOutcome =
+  | { status: 'completed'; result: AvatarResult }
+  | { status: 'failed'; error: string }
+  | { status: 'cancelled' };
+
+/**
+ * Genera un video de avatar vía SSE. Devuelve el desenlace (completado /
+ * fallido / cancelado). Lanza StreamCancelledError solo si el fetch se
+ * aborta antes de recibir un evento de cierre del backend.
+ */
+export async function streamGenerateAvatar(
+  payload: AvatarGenerationRequest,
+  callbacks: AvatarStreamCallbacks,
+  signal: AbortSignal
+): Promise<AvatarStreamOutcome> {
+  const startedAt = Date.now();
+  const untrace = traceAbortSignal(signal, 'generate-avatar');
+  dlog('sse', 'avatar: abriendo stream', {
+    resolution: payload.resolution,
+    mode: payload.audio ? 'audio' : 'tts',
+    signalYaAbortado: signal.aborted,
+  });
+
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/api/generate-avatar?stream=1`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (err) {
+    untrace();
+    if ((err as { name?: string })?.name === 'AbortError') {
+      dwarn('sse', 'avatar: fetch abortado durante la conexión inicial');
+      throw new StreamCancelledError();
+    }
+    derror('sse', 'avatar: fetch falló al conectar', err);
+    throw err;
+  }
+
+  if (!response.ok || !response.body) {
+    untrace();
+    // El backend manda JSON con el detalle en errores de validación (400).
+    let detail = `Backend responded with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) detail = body.error;
+    } catch {
+      /* respuesta sin cuerpo JSON */
+    }
+    derror('sse', `avatar: backend respondió ${response.status}`, detail);
+    throw new Error(detail);
+  }
+
+  let outcome: AvatarStreamOutcome = { status: 'cancelled' };
+  let eventCount = 0;
+
+  try {
+    for await (const { event, data } of parseSseStream(response.body)) {
+      eventCount += 1;
+      dlog('sse', `avatar: evento "${event}"`, data);
+      switch (event) {
+        case 'start':
+          callbacks.onStart?.({
+            jobId: String(data?.jobId ?? ''),
+            model: String(data?.model ?? 'p-video-avatar'),
+            resolution: String(data?.resolution ?? ''),
+            mode: String(data?.mode ?? ''),
+          });
+          break;
+        case 'status':
+          callbacks.onStatus?.({
+            phase: (data?.phase as AvatarPhase) ?? 'processing',
+            elapsedMs: Number(data?.elapsedMs ?? 0),
+            message: String(data?.message ?? ''),
+          });
+          break;
+        case 'warning':
+          callbacks.onWarning?.(String(data?.message ?? ''));
+          break;
+        case 'done':
+          outcome = {
+            status: 'completed',
+            result: {
+              jobId: String(data?.jobId ?? ''),
+              videoUrl: String(data?.video_url ?? ''),
+              localUrl: data?.local_url ? String(data.local_url) : null,
+            },
+          };
+          break;
+        case 'error':
+          outcome = {
+            status: 'failed',
+            error: String(data?.error ?? 'Generación fallida'),
+          };
+          break;
+        case 'cancelled':
+          outcome = { status: 'cancelled' };
+          break;
+      }
+    }
+  } catch (err) {
+    untrace();
+    if ((err as { name?: string })?.name === 'AbortError') {
+      dwarn('sse', 'avatar: stream abortado por el cliente', {
+        eventosRecibidos: eventCount,
+        elapsedMs: Date.now() - startedAt,
+      });
+      throw new StreamCancelledError();
+    }
+    derror('sse', 'avatar: el stream falló', err);
+    throw err;
+  }
+
+  untrace();
+  dlog('sse', `avatar: stream finalizado status=${outcome.status}`, {
+    eventosRecibidos: eventCount,
+    elapsedMs: Date.now() - startedAt,
+  });
+  return outcome;
 }

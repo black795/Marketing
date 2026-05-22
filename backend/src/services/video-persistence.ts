@@ -60,4 +60,43 @@ export async function persistVideo(params: {
   };
 }
 
+/**
+ * Descarga el video de avatar a `assets/output/avatars/<jobId>.mp4`.
+ *
+ * Misma idea que persistVideo pero la pieza de avatar no pertenece a un
+ * proyecto/escena: se identifica solo por su jobId. Lanza error si la
+ * descarga falla — el caller decide si seguir con la URL temporal.
+ */
+export async function persistAvatarVideo(params: {
+  videoUrl: string;
+  jobId: string;
+}): Promise<PersistedVideo> {
+  const safeId = params.jobId.replace(/[^\w\-.]/g, '_');
+  const fileName = `${safeId}.mp4`;
+
+  const dir = path.join(OUTPUT_ROOT, 'avatars');
+  await mkdir(dir, { recursive: true });
+
+  const absolutePath = path.join(dir, fileName);
+
+  const resp = await fetch(params.videoUrl);
+  if (!resp.ok || !resp.body) {
+    throw new Error(
+      `Persist: download failed for avatar ${params.jobId}: HTTP ${resp.status}`
+    );
+  }
+
+  await pipeline(
+    Readable.fromWeb(resp.body as any),
+    createWriteStream(absolutePath)
+  );
+
+  const staticPath = `/assets/output/avatars/${fileName}`;
+  return {
+    absolutePath,
+    staticPath,
+    url: `${PUBLIC_BASE_URL}${staticPath}`,
+  };
+}
+
 export { OUTPUT_ROOT, PROJECT_ROOT };

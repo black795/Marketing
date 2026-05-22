@@ -59,6 +59,47 @@ class GenerateVideoResponse(BaseModel):
     model: str
 
 
+class GenerateAvatarRequest(BaseModel):
+    """Request del modelo de avatar/lipsync (prunaai/p-video-avatar)."""
+
+    image: str = Field(
+        ...,
+        description="Retrato del avatar (data: URL o http URL). jpg/png/webp.",
+    )
+    resolution: str = Field(default="720p", description='"720p" | "1080p"')
+    audio: Optional[str] = Field(
+        default=None,
+        description="Audio propio (data: URL o http URL). Si se entrega, "
+        "manda sobre voice_script y los ajustes de voz.",
+    )
+    voice_script: str = Field(
+        default="",
+        description="Palabras exactas que dirá el avatar. Requerido si no hay audio.",
+    )
+    voice: str = Field(default="Zephyr (Female)", description="Voz TTS.")
+    voice_prompt: str = Field(
+        default="Say the following.",
+        description="Estilo de habla (tono, ritmo, emoción). No se pronuncia.",
+    )
+    voice_language: str = Field(
+        default="English (US)", description="Idioma/acento de la voz."
+    )
+    video_prompt: str = Field(
+        default="The person is talking.",
+        description="Cómo se ve/comporta la persona mientras habla.",
+    )
+    seed: Optional[int] = Field(
+        default=None, description="Semilla para reproducibilidad."
+    )
+    disable_safety_filter: bool = Field(default=True)
+    disable_prompt_upsampling: bool = Field(default=False)
+
+
+class GenerateAvatarResponse(BaseModel):
+    video_url: str
+    model: str
+
+
 class HealthResponse(BaseModel):
     status: str
     models: list[str]

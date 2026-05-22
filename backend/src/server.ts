@@ -7,9 +7,11 @@ import regenerateImagesRouter from './routes/regenerate-images';
 import generateScriptRouter from './routes/generate-script';
 import generateImagesFromScriptRouter from './routes/generate-images-from-script';
 import generateVideosFromScenesRouter from './routes/generate-videos-from-scenes';
+import generateAvatarRouter from './routes/generate-avatar';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
 import { createLogger, newId } from './services/logger';
 import { metrics, recordStatus, snapshotMetrics } from './services/metrics';
+import { assertEnvOrReport } from './services/env';
 
 const log = createLogger('backend');
 const app = express();
@@ -110,6 +112,7 @@ app.use('/api', regenerateImagesRouter);
 app.use('/api', generateScriptRouter);
 app.use('/api', generateImagesFromScriptRouter);
 app.use('/api', generateVideosFromScenesRouter);
+app.use('/api', generateAvatarRouter);
 
 // 404 — ninguna ruta coincidió.
 app.use((req, res) => {
@@ -151,6 +154,13 @@ app.use(
 );
 
 const PORT = Number(process.env.PORT) || 4000;
+
+// Validación de variables de entorno antes de levantar el servidor: si
+// falta un secreto crítico (REPLICATE_API_TOKEN) abortamos con un mensaje
+// claro en lugar de fallar a mitad de una generación.
+if (!assertEnvOrReport()) {
+  process.exit(1);
+}
 
 app.listen(PORT, () => {
   log.info(`Tim Koda gateway escuchando en http://localhost:${PORT}`);
