@@ -12,6 +12,7 @@ import type {
   GenerateVideosFromScenesRequest,
   VideoSceneOutput,
 } from '@/types/story';
+import { dlog, dwarn, derror, traceAbortSignal } from './debug-log';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
@@ -327,9 +328,24 @@ export async function streamRegenerateImages(
   callbacks: RegenerateStreamCallbacks,
   signal: AbortSignal
 ): Promise<RegenerateStreamResult> {
-  const response = await fetch(
-    `${BACKEND_URL}/api/regenerate-images?stream=1`,
-    {
+  const startedAt = Date.now();
+  // Traza el signal: si el abort se dispara, sabremos cuándo y por qué.
+  // Es el primer sitio donde detectar una cancelación accidental.
+  const untrace = traceAbortSignal(signal, 'regenerate-images');
+  dlog('sse', 'regenerate: abriendo stream', {
+    scenes: payload.scenes.length,
+    model: payload.model,
+    signalYaAbortado: signal.aborted,
+  });
+  if (signal.aborted) {
+    // El fetch fallaría igual; lo registramos explícitamente para no
+    // confundir esto con un abort "a media generación".
+    dwarn('sse', 'regenerate: el signal ya estaba abortado ANTES del fetch');
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/api/regenerate-images?stream=1`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -337,19 +353,32 @@ export async function streamRegenerateImages(
       },
       body: JSON.stringify(payload),
       signal,
+    });
+  } catch (err) {
+    untrace();
+    if ((err as { name?: string })?.name === 'AbortError') {
+      dwarn('sse', 'regenerate: fetch abortado durante la conexión inicial');
+      throw new StreamCancelledError();
     }
-  );
+    derror('sse', 'regenerate: fetch falló al conectar', err);
+    throw err;
+  }
 
   if (!response.ok || !response.body) {
+    untrace();
+    derror('sse', `regenerate: backend respondió ${response.status}`);
     throw new Error(`Backend responded with status ${response.status}`);
   }
 
   const resultsById = new Map<number, RegenerateImageResult>();
   let status: 'done' | 'cancelled' = 'cancelled';
   let failed = 0;
+  let eventCount = 0;
 
   try {
     for await (const { event, data } of parseSseStream(response.body)) {
+      eventCount += 1;
+      dlog('sse', `regenerate: evento "${event}"`, data);
       switch (event) {
         case 'start':
           callbacks.onStart?.({ total: data.total, model: data.model });
@@ -393,11 +422,26 @@ export async function streamRegenerateImages(
       }
     }
   } catch (err) {
-    if ((err as any)?.name === 'AbortError') {
+    untrace();
+    if ((err as { name?: string })?.name === 'AbortError') {
+      // Cancelación REAL: el usuario (o un cierre de panel) abortó el signal.
+      dwarn('sse', 'regenerate: stream abortado por el cliente', {
+        eventosRecibidos: eventCount,
+        elapsedMs: Date.now() - startedAt,
+      });
       throw new StreamCancelledError();
     }
+    derror('sse', 'regenerate: el stream falló', err);
     throw err;
   }
+
+  untrace();
+  dlog('sse', `regenerate: stream finalizado status=${status}`, {
+    eventosRecibidos: eventCount,
+    resultados: resultsById.size,
+    failed,
+    elapsedMs: Date.now() - startedAt,
+  });
 
   const results = Array.from(resultsById.values()).sort(
     (a, b) => a.scene_number - b.scene_number

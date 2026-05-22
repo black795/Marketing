@@ -1,9 +1,13 @@
+import { createLogger, type LogContext } from '../logger';
+
 const WORKER_URL =
   process.env.PYTHON_WORKER_URL || 'http://localhost:5000';
 
 const REQUEST_TIMEOUT_MS = 90_000;
 const MAX_RETRIES = 3;
 const DEFAULT_RETRY_DELAY_MS = 12_000;
+
+const log = createLogger('imageWorker');
 
 export interface GenerateImageInput {
   model: string;
@@ -22,6 +26,12 @@ export interface GenerateImageInput {
    * dispara, attempt aborta el fetch y generateImage corta el bucle de retry.
    */
   abortSignal?: AbortSignal;
+  /**
+   * Contexto de trazabilidad (requestId / jobId / sceneId). Se adjunta a
+   * todos los logs del worker para poder seguir una escena de punta a punta:
+   * frontend → gateway → imageWorker → Python worker → Replicate.
+   */
+  logContext?: LogContext;
 }
 
 export class CancelledError extends Error {
@@ -102,10 +112,13 @@ function parseRetryAfterMs(detail: string): number {
 }
 
 async function attempt(input: GenerateImageInput): Promise<Attempt> {
+  const ctx = input.logContext;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const startedAt = Date.now();
 
+  // El abort externo (cancelación real desde el gateway) se reenvía al
+  // controller local para cortar el fetch en curso.
   const external = input.abortSignal;
   const onExternalAbort = () => controller.abort();
   if (external) {
@@ -138,10 +151,9 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
         // ignore parse failures
       }
       const retryable = response.status === 429 || response.status === 502;
-      console.warn(
-        `[imageWorker] ← ${response.status} after ${elapsedMs}ms${
-          retryable ? ' (retryable)' : ''
-        }: ${detail}`
+      log.warn(
+        `← ${response.status} en ${elapsedMs}ms${retryable ? ' (reintentable)' : ''}: ${detail}`,
+        ctx
       );
       return {
         ok: false,
@@ -155,9 +167,7 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
 
     const data = (await response.json()) as { image_url?: string };
     if (!data.image_url) {
-      console.warn(
-        `[imageWorker] ← 200 after ${elapsedMs}ms but no image_url in body`
-      );
+      log.warn(`← 200 en ${elapsedMs}ms pero sin image_url en el body`, ctx);
       return {
         ok: false,
         status: 200,
@@ -166,27 +176,25 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
       };
     }
 
-    console.log(
-      `[imageWorker] ← 200 after ${elapsedMs}ms image_url=${data.image_url.slice(0, 80)}…`
+    log.info(
+      `← 200 en ${elapsedMs}ms image_url=${data.image_url.slice(0, 80)}…`,
+      ctx
     );
     return { ok: true, image_url: data.image_url };
   } catch (err) {
     const elapsedMs = Date.now() - startedAt;
     if (err instanceof Error && err.name === 'AbortError') {
+      // Distinguimos cancelación real (abort externo) de timeout local.
       if (external?.aborted) {
+        log.info(`✗ abortado por cancelación del cliente tras ${elapsedMs}ms`, ctx);
         return { ok: false, status: null, detail: 'Cancelled by client', retryable: false };
       }
       const msg = `Timeout after ${REQUEST_TIMEOUT_MS / 1000}s waiting for ${WORKER_URL}`;
-      console.error(`[imageWorker] ✗ ${msg}`);
+      log.error(`✗ ${msg}`, ctx);
       return { ok: false, status: null, detail: msg, retryable: false };
     }
     const friendly = describeFetchError(err);
-    console.error(
-      `[imageWorker] ✗ after ${elapsedMs}ms: ${friendly}`,
-      err instanceof Error && (err as any).cause
-        ? { cause: (err as any).cause }
-        : ''
-    );
+    log.error(`✗ tras ${elapsedMs}ms: ${friendly}`, ctx, err);
     return { ok: false, status: null, detail: friendly, retryable: false };
   } finally {
     clearTimeout(timer);
@@ -197,15 +205,21 @@ async function attempt(input: GenerateImageInput): Promise<Attempt> {
 export async function generateImage(
   input: GenerateImageInput
 ): Promise<GenerateImageResult> {
+  const ctx = input.logContext;
   const shortPrompt = input.prompt.slice(0, 60).replace(/\s+/g, ' ');
 
   for (let i = 1; i <= MAX_RETRIES; i++) {
+    // Cortar antes de cada intento si ya se canceló: no malgastamos una
+    // llamada a Replicate cuando el cliente ya se fue de verdad.
     if (input.abortSignal?.aborted) {
+      log.info('cancelado antes del intento — abort signal activo', ctx);
       return { image_url: null, image_error: 'Cancelled by client' };
     }
 
-    console.log(
-      `[imageWorker] → POST ${WORKER_URL}/generate-image attempt=${i}/${MAX_RETRIES} model=${input.model} prompt="${shortPrompt}…"`
+    log.info(
+      `→ POST ${WORKER_URL}/generate-image attempt=${i}/${MAX_RETRIES} ` +
+        `model=${input.model} prompt="${shortPrompt}…"`,
+      ctx
     );
 
     const result = await attempt(input);
@@ -220,12 +234,14 @@ export async function generateImage(
 
     const delay =
       result.retryAfterMs ?? DEFAULT_RETRY_DELAY_MS * Math.pow(1.5, i - 1);
-    console.log(
-      `[imageWorker] ⏳ retry en ${Math.round(delay / 1000)}s (status=${result.status})`
+    log.info(
+      `⏳ retry en ${Math.round(delay / 1000)}s (status=${result.status})`,
+      ctx
     );
     try {
       await sleep(delay, input.abortSignal);
     } catch {
+      log.info('cancelado durante el backoff de retry', ctx);
       return { image_url: null, image_error: 'Cancelled by client' };
     }
   }

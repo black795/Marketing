@@ -85,16 +85,20 @@ router.post('/generate-images-from-script', async (req: Request, res: Response) 
   // Modo SSE — el frontend recibe eventos progress/scene/done en vivo.
   // ------------------------------------------------------------------
   if (wantsStream) {
-    const sse = openSseStream(res);
     const abort = new AbortController();
-    let clientGone = false;
 
-    req.on('close', () => {
-      if (!res.writableEnded) {
-        clientGone = true;
-        console.log('[generate-images-from-script] client disconnected, aborting');
+    // FIX: la desconexión se detecta vía res.on('close') dentro de
+    // openSseStream — NO con req.on('close'), que saltaba al terminar de
+    // recibir el body del POST y abortaba la generación por error.
+    // Ver el comentario extenso en services/sse.ts.
+    const sse = openSseStream(res, {
+      label: 'generate-images-from-script',
+      onClientDisconnect: () => {
+        console.log(
+          '[generate-images-from-script] cliente desconectado realmente, abortando'
+        );
         abort.abort();
-      }
+      },
     });
 
     sse.send({
@@ -156,7 +160,7 @@ router.post('/generate-images-from-script', async (req: Request, res: Response) 
       });
     }
 
-    if (clientGone || abort.signal.aborted) {
+    if (sse.isClientGone() || abort.signal.aborted) {
       sse.send({
         event: 'cancelled',
         data: { completed: out.length, total: scenes.length, scenes: out },

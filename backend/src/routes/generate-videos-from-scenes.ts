@@ -111,16 +111,20 @@ router.post('/generate-videos-from-scenes', async (req: Request, res: Response) 
   // Modo SSE — serie estricta (Kling es lento y caro, sin paralelismo).
   // ------------------------------------------------------------------
   if (wantsStream) {
-    const sse = openSseStream(res);
     const abort = new AbortController();
-    let clientGone = false;
 
-    req.on('close', () => {
-      if (!res.writableEnded) {
-        clientGone = true;
-        console.log('[generate-videos-from-scenes] client disconnected, aborting');
+    // FIX: la desconexión se detecta vía res.on('close') dentro de
+    // openSseStream — NO con req.on('close'), que saltaba al terminar de
+    // recibir el body del POST y abortaba la generación por error.
+    // Ver el comentario extenso en services/sse.ts.
+    const sse = openSseStream(res, {
+      label: 'generate-videos-from-scenes',
+      onClientDisconnect: () => {
+        console.log(
+          '[generate-videos-from-scenes] cliente desconectado realmente, abortando'
+        );
         abort.abort();
-      }
+      },
     });
 
     sse.send({
@@ -214,7 +218,7 @@ router.post('/generate-videos-from-scenes', async (req: Request, res: Response) 
       });
     }
 
-    if (clientGone || abort.signal.aborted) {
+    if (sse.isClientGone() || abort.signal.aborted) {
       sse.send({
         event: 'cancelled',
         data: { completed: out.length, total: scenes.length, scenes: out },
