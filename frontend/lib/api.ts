@@ -133,7 +133,7 @@ export class StreamCancelledError extends Error {
   }
 }
 
-async function* parseSseStream(
+export async function* parseSseStream(
   body: ReadableStream<Uint8Array>
 ): AsyncGenerator<{ event: string; data: any }> {
   const reader = body.getReader();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PromptForm, { type PromptContext } from '@/components/PromptForm';
 import ProjectHeader from '@/components/ProjectHeader';
 import ScenesGrid from '@/components/ScenesGrid';
@@ -26,6 +27,7 @@ import {
   streamRegenerateImages,
   StreamCancelledError,
 } from '@/lib/api';
+import { buildTimeline } from '@/lib/captions-api';
 import {
   DEFAULT_SETTINGS,
   type GenerationSettings,
@@ -112,6 +114,13 @@ export default function Home() {
   );
   const [videoError, setVideoError] = useState<string | null>(null);
   const videoStreamAbortRef = useRef<AbortController | null>(null);
+
+  // ---------- Salto al editor (paso siguiente a video-result) ----------
+  // Construye el timeline.json del proyecto a partir de las escenas + videos
+  // y navega a /editor?projectId=... para que ambos editores ya lo tengan.
+  const router = useRouter();
+  const [continuingToEditor, setContinuingToEditor] = useState(false);
+  const [continueError, setContinueError] = useState<string | null>(null);
 
   // ---------- Edición avanzada por escena ----------
   const [historyByScene, setHistoryByScene] = useState<
@@ -614,6 +623,46 @@ export default function Home() {
       ],
     };
     await handleStartVideoGeneration(retryDecision);
+  }
+
+  /**
+   * Construye el timeline.json combinando escenas + videos del proyecto y
+   * navega a /editor. El timeline queda persistido en el backend, así que
+   * cuando los editores se abren ya tienen toda la info del proyecto.
+   */
+  async function handleContinueToEditor() {
+    if (!result || continuingToEditor) return;
+    setContinuingToEditor(true);
+    setContinueError(null);
+    try {
+      const videoMap = new Map(videoScenes.map((v) => [v.scene_number, v]));
+      const scenes = result.scenes.map((s) => {
+        const v = videoMap.get(s.scene_number);
+        return {
+          scene_number: s.scene_number,
+          image_url: s.image_url ?? null,
+          video_url: v?.video_url ?? null,
+          local_url: v?.local_url ?? null,
+          duration: s.duration,
+          narration: s.narration,
+        };
+      });
+      await buildTimeline({
+        projectId: result.projectId,
+        title: result.title,
+        source: 'scripts',
+        scenes,
+      });
+      // Navegación — no reseteamos continuingToEditor: la página se desmonta.
+      router.push(`/editor?projectId=${encodeURIComponent(result.projectId)}`);
+    } catch (err) {
+      setContinueError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo construir el timeline del proyecto'
+      );
+      setContinuingToEditor(false);
+    }
   }
 
   // ---------- Fase 5: selección + regeneración de imágenes ----------
@@ -1232,6 +1281,9 @@ export default function Home() {
             onBackToReview={handleBackToVideoReview}
             onReset={handleReset}
             onRetryScene={handleRetryScene}
+            onContinueToEditor={handleContinueToEditor}
+            continuingToEditor={continuingToEditor}
+            continueError={continueError}
           />
         )}
       </div>
@@ -1596,12 +1648,18 @@ function VideoResultView({
   onBackToReview,
   onReset,
   onRetryScene,
+  onContinueToEditor,
+  continuingToEditor,
+  continueError,
 }: {
   scenes: VideoSceneOutput[];
   error: string | null;
   onBackToReview: () => void;
   onReset: () => void;
   onRetryScene: (sceneNumber: number) => void;
+  onContinueToEditor: () => void;
+  continuingToEditor: boolean;
+  continueError: string | null;
 }) {
   const success = scenes.filter((s) => s.video_url);
   const failed = scenes.filter((s) => !s.video_url);
@@ -1652,6 +1710,17 @@ function VideoResultView({
             </button>
             <LoadingButton
               variant="primary"
+              onClick={onContinueToEditor}
+              loading={continuingToEditor}
+              loadingLabel="Preparando timeline…"
+              disabled={success.length === 0}
+              aria-label="Continuar al editor (Remotion o Captions)"
+              title="Construye el timeline del proyecto y abre el selector de editor"
+            >
+              🎬 Continuar al editor →
+            </LoadingButton>
+            <LoadingButton
+              variant="secondary"
               onClick={downloadAll}
               disabled={success.length === 0}
               aria-label="Descargar todos los videos"
@@ -1670,6 +1739,11 @@ function VideoResultView({
         {error && (
           <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+          </p>
+        )}
+        {continueError && (
+          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            No se pudo continuar al editor: {continueError}
           </p>
         )}
       </div>

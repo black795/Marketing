@@ -99,4 +99,41 @@ export async function persistAvatarVideo(params: {
   };
 }
 
+/**
+ * Descarga el video subtitulado a `assets/output/captions/<jobId>.mp4`.
+ * Misma idea que persistAvatarVideo: la URL del proveedor puede expirar,
+ * así que se guarda una copia local servida por express.static.
+ */
+export async function persistCaptionedVideo(params: {
+  videoUrl: string;
+  jobId: string;
+}): Promise<PersistedVideo> {
+  const safeId = params.jobId.replace(/[^\w\-.]/g, '_');
+  const fileName = `${safeId}.mp4`;
+
+  const dir = path.join(OUTPUT_ROOT, 'captions');
+  await mkdir(dir, { recursive: true });
+
+  const absolutePath = path.join(dir, fileName);
+
+  const resp = await fetch(params.videoUrl);
+  if (!resp.ok || !resp.body) {
+    throw new Error(
+      `Persist: download failed for captioned video ${params.jobId}: HTTP ${resp.status}`
+    );
+  }
+
+  await pipeline(
+    Readable.fromWeb(resp.body as any),
+    createWriteStream(absolutePath)
+  );
+
+  const staticPath = `/assets/output/captions/${fileName}`;
+  return {
+    absolutePath,
+    staticPath,
+    url: `${PUBLIC_BASE_URL}${staticPath}`,
+  };
+}
+
 export { OUTPUT_ROOT, PROJECT_ROOT };

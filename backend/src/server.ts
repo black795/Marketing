@@ -8,6 +8,9 @@ import generateScriptRouter from './routes/generate-script';
 import generateImagesFromScriptRouter from './routes/generate-images-from-script';
 import generateVideosFromScenesRouter from './routes/generate-videos-from-scenes';
 import generateAvatarRouter from './routes/generate-avatar';
+import captionsRouter from './routes/captions';
+import captionJobRouter from './routes/caption-job';
+import timelineRouter from './routes/timeline';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
 import { createLogger, newId } from './services/logger';
 import { metrics, recordStatus, snapshotMetrics } from './services/metrics';
@@ -113,6 +116,9 @@ app.use('/api', generateScriptRouter);
 app.use('/api', generateImagesFromScriptRouter);
 app.use('/api', generateVideosFromScenesRouter);
 app.use('/api', generateAvatarRouter);
+app.use('/api', captionsRouter);
+app.use('/api', captionJobRouter);
+app.use('/api', timelineRouter);
 
 // 404 — ninguna ruta coincidió.
 app.use((req, res) => {

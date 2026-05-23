@@ -48,8 +48,19 @@ export default function ModeSelectPage() {
           />
         </div>
 
-        <footer className="mt-10 text-center text-xs text-neutral-400">
-          Puedes volver a esta pantalla en cualquier momento desde la página de inicio.
+        <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
+          <Link
+            href="/editor"
+            className="font-semibold text-neutral-500 hover:text-brand-pink"
+          >
+            🎬 Editores (Remotion · Captions)
+          </Link>
+          <Link
+            href="/settings"
+            className="font-semibold text-neutral-500 hover:text-brand-pink"
+          >
+            ⚙️ Configuración de APIs
+          </Link>
         </footer>
       </div>
     </main>
