@@ -72,6 +72,7 @@ router.post('/timeline/build', (req: Request, res: Response) => {
     height: body.height,
     source: body.source,
     audioUrl: body.audioUrl ?? null,
+    respectOrder: body.respectOrder === true,
     scenes,
   });
 

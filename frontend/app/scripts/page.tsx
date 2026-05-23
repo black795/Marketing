@@ -28,6 +28,7 @@ import {
   StreamCancelledError,
 } from '@/lib/api';
 import { buildTimeline } from '@/lib/captions-api';
+import AssetsHubPanel from '@/components/assets-hub/AssetsHubPanel';
 import {
   DEFAULT_SETTINGS,
   type GenerationSettings,
@@ -53,7 +54,8 @@ type Phase =
   | 'result'
   | 'video-review'
   | 'generating-videos'
-  | 'video-result';
+  | 'video-result'
+  | 'preparing-assets';
 
 interface StreamProgress {
   total: number;
@@ -626,43 +628,15 @@ export default function Home() {
   }
 
   /**
-   * Construye el timeline.json combinando escenas + videos del proyecto y
-   * navega a /editor. El timeline queda persistido en el backend, así que
-   * cuando los editores se abren ya tienen toda la info del proyecto.
+   * Pasa de "video-result" a la fase 6 (Hub de Assets / Preparación).
+   * El Hub es el que construye el timeline final y abre el editor — antes
+   * esta función lo hacía directo, ahora hay una capa de preparación.
    */
   async function handleContinueToEditor() {
-    if (!result || continuingToEditor) return;
-    setContinuingToEditor(true);
+    if (!result) return;
     setContinueError(null);
-    try {
-      const videoMap = new Map(videoScenes.map((v) => [v.scene_number, v]));
-      const scenes = result.scenes.map((s) => {
-        const v = videoMap.get(s.scene_number);
-        return {
-          scene_number: s.scene_number,
-          image_url: s.image_url ?? null,
-          video_url: v?.video_url ?? null,
-          local_url: v?.local_url ?? null,
-          duration: s.duration,
-          narration: s.narration,
-        };
-      });
-      await buildTimeline({
-        projectId: result.projectId,
-        title: result.title,
-        source: 'scripts',
-        scenes,
-      });
-      // Navegación — no reseteamos continuingToEditor: la página se desmonta.
-      router.push(`/editor?projectId=${encodeURIComponent(result.projectId)}`);
-    } catch (err) {
-      setContinueError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo construir el timeline del proyecto'
-      );
-      setContinuingToEditor(false);
-    }
+    setContinuingToEditor(false);
+    setPhase('preparing-assets');
   }
 
   // ---------- Fase 5: selección + regeneración de imágenes ----------
@@ -1286,6 +1260,17 @@ export default function Home() {
             continueError={continueError}
           />
         )}
+
+        {phase === 'preparing-assets' && result && (
+          <AssetsHubPanel
+            result={result}
+            videoScenes={videoScenes}
+            onBackToVideo={() => setPhase('video-result')}
+            onReset={handleReset}
+            onRegenerateImages={() => setPhase('result')}
+            onRegenerateVideos={() => setPhase('video-review')}
+          />
+        )}
       </div>
 
       {phase === 'result' && result && (
@@ -1420,6 +1405,7 @@ function PhaseStepper({ phase }: { phase: Phase }) {
     { key: ['generating-images', 'result'], label: '3 · Imágenes' },
     { key: 'video-review', label: '4 · Revisar' },
     { key: ['generating-videos', 'video-result'], label: '5 · Video' },
+    { key: 'preparing-assets', label: '6 · Assets' },
   ];
 
   function isActive(key: Phase | Phase[]): boolean {
@@ -1712,12 +1698,12 @@ function VideoResultView({
               variant="primary"
               onClick={onContinueToEditor}
               loading={continuingToEditor}
-              loadingLabel="Preparando timeline…"
+              loadingLabel="Cargando…"
               disabled={success.length === 0}
-              aria-label="Continuar al editor (Remotion o Captions)"
-              title="Construye el timeline del proyecto y abre el selector de editor"
+              aria-label="Continuar a la fase de preparación (Assets Hub)"
+              title="Abre el Hub de Assets para configurar la edición antes del editor"
             >
-              🎬 Continuar al editor →
+              📦 Continuar a preparación →
             </LoadingButton>
             <LoadingButton
               variant="secondary"

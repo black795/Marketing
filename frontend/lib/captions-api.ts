@@ -145,6 +145,8 @@ export interface BuildTimelinePayload {
   height?: number;
   source?: 'scripts' | 'avatar' | 'manual';
   audioUrl?: string | null;
+  /** Si es true, las escenas se procesan en el orden recibido (custom). */
+  respectOrder?: boolean;
   scenes: {
     scene_number: number;
     image_url?: string | null;

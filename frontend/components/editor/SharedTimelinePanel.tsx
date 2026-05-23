@@ -2,8 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { loadTimeline } from '@/lib/captions-api';
+import {
+  getLastRender,
+  streamRender,
+  type RenderProgress,
+  type RenderResult,
+} from '@/lib/render-api';
+import { StreamCancelledError } from '@/lib/api';
 import type { TimelineDocument } from '@/types/timeline';
 import LoadingButton from '@/components/loading/LoadingButton';
+import ProgressBar from '@/components/loading/ProgressBar';
 
 /**
  * Panel compartido por ambos editores (Remotion y Captions). Carga el
@@ -161,6 +169,232 @@ export default function SharedTimelinePanel({
           </ol>
         </div>
       )}
+
+      {/* Render — solo para el modo Remotion. */}
+      {!isCaptions && timeline && (
+        <RenderSection
+          projectId={(initialProjectId ?? projectId).trim()}
+          hasCaptions={timeline.captions.length > 0}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Render section — produce el MP4 final con ffmpeg + subtítulos quemados.
+// ---------------------------------------------------------------------------
+
+function phaseLabel(phase: RenderProgress['phase']): string {
+  switch (phase) {
+    case 'preparing':
+      return 'Preparando…';
+    case 'downloading':
+      return 'Descargando clips';
+    case 'building-captions':
+      return 'Compilando subtítulos';
+    case 'encoding':
+      return 'Renderizando con ffmpeg';
+    case 'done':
+      return 'Completado';
+    case 'error':
+      return 'Error';
+    case 'cancelled':
+      return 'Cancelado';
+    default:
+      return phase;
+  }
+}
+
+function RenderSection({
+  projectId,
+  hasCaptions,
+}: {
+  projectId: string;
+  hasCaptions: boolean;
+}) {
+  const [lastRender, setLastRender] = useState<RenderResult | null>(null);
+  const [burnCaptions, setBurnCaptions] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<RenderProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Carga el último render si existe (al montar y cuando cambia el proyecto).
+  const lastLoadedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!projectId) return;
+    if (lastLoadedRef.current === projectId) return;
+    lastLoadedRef.current = projectId;
+    getLastRender(projectId)
+      .then((r) => setLastRender(r))
+      .catch(() => {
+        /* 404 o red → simplemente no hay render previo */
+      });
+  }, [projectId]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  async function handleRender() {
+    if (!projectId || running) return;
+    setError(null);
+    setProgress({ phase: 'connecting', message: 'Conectando…' });
+    setRunning(true);
+
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    try {
+      const outcome = await streamRender(
+        projectId,
+        { burnCaptions },
+        {
+          onProgress: (p) => setProgress(p),
+        },
+        ctrl.signal
+      );
+
+      if (outcome.status === 'done') {
+        setLastRender(outcome.render);
+        setProgress({
+          phase: 'done',
+          message: 'Render completo',
+          progress: 1,
+        });
+      } else if (outcome.status === 'cancelled') {
+        setProgress({ phase: 'cancelled', message: 'Render cancelado' });
+      } else {
+        setError(outcome.error);
+        setProgress({ phase: 'error', message: outcome.error });
+      }
+    } catch (err) {
+      if (err instanceof StreamCancelledError) {
+        setProgress({ phase: 'cancelled', message: 'Render cancelado' });
+      } else {
+        const message =
+          err instanceof Error ? err.message : 'Error desconocido';
+        setError(message);
+        setProgress({ phase: 'error', message });
+      }
+    } finally {
+      setRunning(false);
+      abortRef.current = null;
+    }
+  }
+
+  function handleCancel() {
+    abortRef.current?.abort();
+  }
+
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-200 px-4 py-3">
+        <p className="text-sm font-semibold text-neutral-900">
+          🎞️ Render del video editado
+        </p>
+        <p className="text-xs text-neutral-500">
+          Concatena los clips del timeline con ffmpeg y produce un MP4 final.
+        </p>
+      </div>
+
+      <div className="space-y-3 px-4 py-4">
+        <label className="flex items-start gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={burnCaptions}
+            onChange={(e) => setBurnCaptions(e.target.checked)}
+            disabled={running || !hasCaptions}
+            className="mt-0.5 accent-brand-pink"
+          />
+          <span className={hasCaptions ? 'text-neutral-700' : 'text-neutral-400'}>
+            Quemar subtítulos del timeline sobre el video (libass)
+            {!hasCaptions && (
+              <span className="ml-1 text-neutral-400">
+                — el timeline no trae captions
+              </span>
+            )}
+          </span>
+        </label>
+
+        <div className="flex gap-2">
+          <LoadingButton
+            variant="primary"
+            onClick={handleRender}
+            loading={running}
+            loadingLabel="Renderizando…"
+            disabled={!projectId || running}
+          >
+            {lastRender ? 'Re-renderizar' : 'Renderizar video editado'}
+          </LoadingButton>
+          {running && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="rounded-md border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+
+        {progress && (running || progress.phase === 'error' || progress.phase === 'cancelled') && (
+          <ProgressBar
+            value={
+              progress.phase === 'encoding' ||
+              progress.phase === 'downloading'
+                ? progress.progress ?? null
+                : progress.phase === 'done'
+                  ? 1
+                  : null
+            }
+            label={phaseLabel(progress.phase)}
+            detail={progress.message}
+          />
+        )}
+
+        {error && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </p>
+        )}
+
+        {lastRender && (
+          <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs font-semibold text-neutral-700">
+              ✅ Última salida ({new Date(lastRender.renderedAt).toLocaleString()})
+            </p>
+            <p className="text-[11px] text-neutral-500">
+              {lastRender.width}×{lastRender.height} · {lastRender.fps}fps ·{' '}
+              {lastRender.durationSeconds.toFixed(1)}s · {lastRender.clipCount}{' '}
+              clips · captions: {lastRender.burnedCaptions ? 'sí' : 'no'}
+            </p>
+            <video
+              key={lastRender.url}
+              src={lastRender.url}
+              controls
+              playsInline
+              className="aspect-[9/16] w-48 rounded-md bg-black"
+            />
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={lastRender.url}
+                download
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-50"
+              >
+                ⬇ Descargar MP4
+              </a>
+              <a
+                href={lastRender.url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-50"
+              >
+                Abrir en nueva pestaña
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

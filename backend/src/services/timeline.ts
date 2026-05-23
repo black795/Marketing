@@ -97,6 +97,12 @@ export interface BuildTimelineInput {
   source?: 'scripts' | 'avatar' | 'manual';
   scenes: TimelineSceneInput[];
   audioUrl?: string | null;
+  /**
+   * Si es true, las escenas se procesan en el orden recibido (el Hub de
+   * Assets usa esto para honrar un reorden manual). Por defecto se ordena
+   * por scene_number — preserva el comportamiento original.
+   */
+  respectOrder?: boolean;
 }
 
 const DEFAULTS = { fps: 30, width: 1080, height: 1920, sceneDuration: 5 };
@@ -130,9 +136,9 @@ export function buildTimeline(input: BuildTimelineInput): TimelineDocument {
   const width = input.width && input.width > 0 ? input.width : DEFAULTS.width;
   const height = input.height && input.height > 0 ? input.height : DEFAULTS.height;
 
-  const ordered = [...input.scenes].sort(
-    (a, b) => a.scene_number - b.scene_number
-  );
+  const ordered = input.respectOrder
+    ? input.scenes.slice()
+    : [...input.scenes].sort((a, b) => a.scene_number - b.scene_number);
 
   const clips: TimelineClip[] = [];
   const captions: TimelineCaption[] = [];
