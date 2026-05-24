@@ -88,6 +88,22 @@ app.use((req, res, next) => {
 // Endpoints de monitoreo / debugging.
 // =====================================================================
 
+/** Root — pequeña landing para confirmar que el gateway está vivo. */
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    service: 'Tim Koda gateway',
+    status: 'ok',
+    uptimeSeconds: Math.round((Date.now() - metrics.startedAt) / 1000),
+    endpoints: {
+      health: '/health',
+      metrics: '/metrics',
+      debugRoutes: '/debug/routes',
+      api: '/api/*',
+      assets: '/assets/*',
+    },
+  });
+});
+
 /** Estado del gateway y del worker Python (200 ok / 503 degradado). */
 app.get('/health', async (_req, res) => {
   const worker = await checkWorkerHealth();
