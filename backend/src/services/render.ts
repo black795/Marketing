@@ -1,21 +1,24 @@
 /**
- * Render del video editado — la SALIDA del editor.
+ * Render del video editado — pipeline incremental con cache de segmentos.
  *
- * Toma el `timeline.json` (clips + captions) y, si existe, el `edit-plan.json`
- * (escenas incluidas + orden custom), descarga los clips remotos a un cache
- * local, compila los subtítulos a un archivo ASS y ejecuta una sola llamada
- * a `ffmpeg` con `filter_complex` para:
+ * Pipeline en 3 fases (parallelism-aware):
  *
- *   1. Normalizar cada clip a `width x height @ fps` con crop "cover".
- *   2. Concatenar todos los clips en orden.
- *   3. Quemar los subtítulos encima con libass (opcional).
- *   4. Mezclar el audio si el timeline lo tiene.
+ *   1. Per-scene encode → `<projectDir>/render-cache/scene-<id>-<hash>.mp4`
+ *      Cada escena se normaliza a (width × height @ fps) y se cachea por hash
+ *      de contenido. Escenas sin cambios → cache hit (skip).
+ *      Hasta N en paralelo (config: `parallelism`, default 4).
  *
- * Salida: `assets/output/<projectId>/edited.mp4` + `render.json` con metadata.
+ *   2. Concat → ffmpeg concat demuxer (`-c copy`), instantáneo.
  *
- * Diseño de errores: el caller (la ruta SSE) emite los eventos al cliente;
- * este servicio sólo notifica progreso vía `onProgress`. Lanza errores con
- * mensajes claros si falta el timeline, no hay clips, o ffmpeg falla.
+ *   3. Final pass → quema captions (libass) + mezcla audio. Reencoding único.
+ *      Si no hay captions ni audio, sólo renombra el intermediate.
+ *
+ * Soporta:
+ *   - Cache de segmentos (sceneHash incluye contenido + target).
+ *   - Force re-render (`force: true` invalida el cache).
+ *   - Export presets (`presetId`: cambia width/height/fps/crf/preset).
+ *
+ * API pública estable: el route SSE no cambia.
  */
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -34,12 +37,23 @@ import {
 } from './timeline';
 import { loadEditPlan, type EditPlan } from './edit-plan';
 import { createLogger } from './logger';
+import {
+  sceneHash,
+  cachedSegmentPath,
+  isCached,
+  pruneCache,
+  targetFromPreset,
+  type CacheTarget,
+} from './render-cache';
+import { getExportPreset, type ExportPreset } from './render-presets';
 
 const log = createLogger('render');
 
 const PUBLIC_BASE_URL =
   process.env.BACKEND_PUBLIC_URL || 'http://localhost:4000';
 const FFMPEG_BIN = process.env.FFMPEG_BIN || 'ffmpeg';
+
+const DEFAULT_PARALLELISM = Number(process.env.RENDER_PARALLELISM ?? 4);
 
 // ---- Tipos públicos --------------------------------------------------------
 
@@ -55,12 +69,21 @@ export interface RenderResult {
   clipCount: number;
   burnedCaptions: boolean;
   renderedAt: string;
+  /** Preset de export aplicado (null si renderConfig nativo). */
+  presetId: string | null;
+  /** Segmentos servidos desde cache (incremental). */
+  cacheHits: number;
+  /** Segmentos recién encodeados. */
+  cacheMisses: number;
 }
 
 export type RenderPhase =
   | 'preparing'
   | 'downloading'
   | 'building-captions'
+  | 'encoding-segments'
+  | 'concat'
+  | 'final-pass'
   | 'encoding'
   | 'done'
   | 'error';
@@ -68,20 +91,24 @@ export type RenderPhase =
 export interface RenderProgressEvent {
   phase: RenderPhase;
   message: string;
-  /** 0..1 dentro de la fase actual (cuando aplica). */
   progress?: number;
   detail?: Record<string, unknown>;
 }
 
 export interface RenderOptions {
   projectId: string;
-  /** Quema los subtítulos del timeline sobre el video (default true). */
   burnCaptions?: boolean;
   signal?: AbortSignal;
   onProgress?: (e: RenderProgressEvent) => void;
+  /** Preset de export — overridea width/height/fps/crf/preset. */
+  presetId?: string | null;
+  /** true = ignora cache y re-encodea todos los segmentos. */
+  force?: boolean;
+  /** Concurrencia de encoding paralelo. Default 4. */
+  parallelism?: number;
 }
 
-// ---- Helpers internos ------------------------------------------------------
+// ---- Helpers internos preservados (no rompen comportamiento previo) -------
 
 interface ResolvedClip {
   clip: TimelineClip;
@@ -110,7 +137,6 @@ function applyEditPlan(
     const order = new Map<number, number>(
       plan.sceneOrder.map((n, i) => [n, i])
     );
-    // Los que no estén en sceneOrder van al final, en su orden natural.
     out = out
       .slice()
       .sort(
@@ -122,10 +148,6 @@ function applyEditPlan(
   return out;
 }
 
-/**
- * Si `clip.src` apunta a algo local o servido por express.static, devuelve
- * el path absoluto en disco. Si es remoto (https), lo descarga al cache.
- */
 async function ensureLocalClip(
   clip: TimelineClip,
   cacheDir: string,
@@ -136,38 +158,30 @@ async function ensureLocalClip(
       `Clip de la escena ${clip.sceneNumber} no tiene "src" — regenera o elimínalo del plan.`
     );
   }
-
-  // 1) Path estático /assets/... → relativo a la raíz del proyecto.
   if (clip.src.startsWith('/assets/')) {
     return path.join(PROJECT_ROOT, clip.src.replace(/^\/+/, ''));
   }
-  // 2) http(s) que apunta al propio backend → resolver a path local.
   try {
     const u = new URL(clip.src);
     if (u.pathname.startsWith('/assets/')) {
       return path.join(PROJECT_ROOT, u.pathname.replace(/^\/+/, ''));
     }
   } catch {
-    /* no es URL absoluta */
+    /* not a URL */
   }
-  // 3) file:// → path local.
   if (clip.src.startsWith('file://')) {
     return new URL(clip.src).pathname.replace(/^\/([A-Za-z]:)/, '$1');
   }
-  // 4) Path absoluto del disco.
   if (path.isAbsolute(clip.src) && fs.existsSync(clip.src)) {
     return clip.src;
   }
 
-  // 5) Remoto → descargar al cache.
   const ext = clip.kind === 'video' ? 'mp4' : guessImageExt(clip.src);
   const dst = path.join(
     cacheDir,
     `clip-${String(clip.sceneNumber).padStart(2, '0')}.${ext}`
   );
-  if (fs.existsSync(dst) && fs.statSync(dst).size > 0) {
-    return dst;
-  }
+  if (fs.existsSync(dst) && fs.statSync(dst).size > 0) return dst;
 
   log.info(`descargando clip ${clip.sceneNumber} desde ${clip.src}`);
   const resp = await fetch(clip.src, { signal });
@@ -176,10 +190,7 @@ async function ensureLocalClip(
       `No se pudo descargar el clip de la escena ${clip.sceneNumber}: HTTP ${resp.status}`
     );
   }
-  await pipeline(
-    Readable.fromWeb(resp.body as any),
-    createWriteStream(dst)
-  );
+  await pipeline(Readable.fromWeb(resp.body as any), createWriteStream(dst));
   return dst;
 }
 
@@ -188,20 +199,13 @@ function guessImageExt(url: string): string {
   return m ? m[1].toLowerCase().replace('jpeg', 'jpg') : 'jpg';
 }
 
-/**
- * El edit-plan pudo reordenar/filtrar clips. Las captions del timeline tienen
- * `startFrame`/`endFrame` anclados al timeline ORIGINAL. Aquí las recolocamos
- * sobre el NUEVO timeline (mantenemos la duración relativa de cada caption).
- */
 function remapCaptions(
   timeline: TimelineDocument,
   resolved: ResolvedClip[]
 ): TimelineCaption[] {
   const out: TimelineCaption[] = [];
   for (const { clip, newStartFrame } of resolved) {
-    const orig = timeline.captions.find(
-      (c) => c.id === `caption-${clip.sceneNumber}`
-    );
+    const orig = timeline.captions.find((c) => c.id === `caption-${clip.sceneNumber}`);
     if (!orig) continue;
     const offset = newStartFrame - orig.startFrame;
     out.push({
@@ -236,21 +240,17 @@ function escapeAssText(text: string): string {
     .trim();
 }
 
-/**
- * Construye el .ass para libass. Estilo "viral" por defecto: Arial Black
- * blanco con outline negro grueso, centrado-bajo, sombra suave. Se puede
- * iterar después leyendo `editPlan.captionTemplateId` y mapeando a estilos.
- */
 function buildAssFile(
   captions: TimelineCaption[],
-  timeline: TimelineDocument
+  timeline: TimelineDocument,
+  target: CacheTarget
 ): string {
   const header =
     `[Script Info]\n` +
     `Title: Tim Koda Captions\n` +
     `ScriptType: v4.00+\n` +
-    `PlayResX: ${timeline.width}\n` +
-    `PlayResY: ${timeline.height}\n` +
+    `PlayResX: ${target.width}\n` +
+    `PlayResY: ${target.height}\n` +
     `WrapStyle: 2\n` +
     `ScaledBorderAndShadow: yes\n` +
     `YCbCr Matrix: TV.709\n\n` +
@@ -259,7 +259,6 @@ function buildAssFile(
     `Style: Default,Arial Black,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,80,80,260,1\n\n` +
     `[Events]\n` +
     `Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
-
   const lines: string[] = [];
   for (const cap of captions) {
     const start = framesToAssTime(cap.startFrame, timeline.fps);
@@ -268,123 +267,36 @@ function buildAssFile(
     if (!text) continue;
     lines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`);
   }
-
   return header + lines.join('\n') + '\n';
 }
 
-// ---- Construcción de la línea de comandos ffmpeg ---------------------------
-
-interface FfmpegInput {
-  path: string;
-  kind: 'image' | 'video';
-  /** Duración deseada del clip en segundos. */
-  durationSec: number;
-}
-
-function buildFfmpegArgs(params: {
-  clips: FfmpegInput[];
-  width: number;
-  height: number;
-  fps: number;
-  audioPath: string | null;
-  /** Nombre del .ass relativo al CWD del proceso (para evitar escaping de paths). */
-  subtitleFile: string | null;
-  outputPath: string;
-}): string[] {
-  const { clips, width, height, fps, audioPath, subtitleFile, outputPath } =
-    params;
-
-  const args: string[] = [
-    '-y',
-    '-hide_banner',
-    '-loglevel',
-    'error',
-    '-stats_period',
-    '0.5',
-    '-progress',
-    'pipe:1',
-  ];
-
-  // Inputs
-  for (const c of clips) {
-    if (c.kind === 'image') {
-      args.push('-loop', '1');
-      args.push('-framerate', String(fps));
-      args.push('-t', c.durationSec.toFixed(3));
-      args.push('-i', c.path);
-    } else {
-      args.push('-i', c.path);
+function resolveLocalOrRemote(src: string): string {
+  if (src.startsWith('/assets/')) {
+    return path.join(PROJECT_ROOT, src.replace(/^\/+/, ''));
+  }
+  try {
+    const u = new URL(src);
+    if (u.pathname.startsWith('/assets/')) {
+      return path.join(PROJECT_ROOT, u.pathname.replace(/^\/+/, ''));
     }
+  } catch {
+    /* not a URL */
   }
-
-  const audioIdx = audioPath ? clips.length : -1;
-  if (audioPath) {
-    args.push('-i', audioPath);
-  }
-
-  // filter_complex: normalizar cada clip + concat + (opcional) subtitles.
-  const filters: string[] = [];
-  for (let i = 0; i < clips.length; i++) {
-    const c = clips[i];
-    // "cover crop": escala manteniendo aspecto, luego recorta al exacto.
-    filters.push(
-      `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,` +
-        `crop=${width}:${height},setsar=1,fps=${fps},` +
-        `trim=duration=${c.durationSec.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`
-    );
-  }
-  const concatInputs = clips.map((_, i) => `[v${i}]`).join('');
-  filters.push(
-    `${concatInputs}concat=n=${clips.length}:v=1:a=0[merged]`
-  );
-
-  let lastLabel = '[merged]';
-  if (subtitleFile) {
-    // Path relativo al CWD del proceso ffmpeg para esquivar el escape
-    // de ":" en filtros en Windows (el caller usa cwd = projectDir).
-    filters.push(`[merged]ass=${subtitleFile}[withcaps]`);
-    lastLabel = '[withcaps]';
-  }
-
-  args.push('-filter_complex', filters.join(';'));
-  args.push('-map', lastLabel);
-  if (audioIdx >= 0) {
-    args.push('-map', `${audioIdx}:a`);
-    args.push('-c:a', 'aac', '-b:a', '192k', '-shortest');
-  }
-  args.push(
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'fast',
-    '-crf',
-    '20',
-    '-r',
-    String(fps),
-    '-movflags',
-    '+faststart',
-    outputPath
-  );
-
-  return args;
+  return src;
 }
 
-/**
- * Ejecuta ffmpeg parseando `-progress pipe:1` para reportar avance.
- * `out_time_us` es microsegundos a pesar del nombre (campo "_us" desde
- * ffmpeg 4.x): lo dividimos por la duración total para sacar el 0..1.
- */
+// ---- ffmpeg runner genérico (parsea -progress pipe:1) ---------------------
+
 function runFfmpeg(opts: {
   args: string[];
   cwd: string;
   totalSeconds: number;
   signal?: AbortSignal;
   onProgress?: (p: number) => void;
+  label?: string;
 }): Promise<void> {
   return new Promise((resolve, reject) => {
-    log.info(`ffmpeg ${opts.args.join(' ')}`);
+    log.info(`ffmpeg [${opts.label ?? 'job'}] ${opts.args.join(' ')}`);
     const proc = spawn(FFMPEG_BIN, opts.args, { cwd: opts.cwd });
 
     let stderr = '';
@@ -400,11 +312,9 @@ function runFfmpeg(opts: {
       outBuf = lines.pop() ?? '';
       for (const line of lines) {
         const m = line.match(/^out_time_us=(\d+)/);
-        if (m) {
+        if (m && opts.totalSeconds > 0 && opts.onProgress) {
           const seconds = Number(m[1]) / 1_000_000;
-          if (opts.totalSeconds > 0 && opts.onProgress) {
-            opts.onProgress(Math.min(seconds / opts.totalSeconds, 1));
-          }
+          opts.onProgress(Math.min(seconds / opts.totalSeconds, 1));
         }
       }
     });
@@ -424,9 +334,7 @@ function runFfmpeg(opts: {
     });
     proc.on('close', (code) => {
       opts.signal?.removeEventListener('abort', onAbort);
-      if (opts.signal?.aborted) {
-        return reject(new Error('Render cancelado'));
-      }
+      if (opts.signal?.aborted) return reject(new Error('Render cancelado'));
       if (code === 0) return resolve();
       const tail = stderr.trim().split('\n').slice(-6).join('\n');
       reject(new Error(`ffmpeg falló (code ${code}): ${tail || 'sin stderr'}`));
@@ -434,16 +342,152 @@ function runFfmpeg(opts: {
   });
 }
 
+// ---- Per-scene segment encoder (cache hit-aware) --------------------------
+
+function buildSegmentArgs(params: {
+  localClip: string;
+  kind: 'image' | 'video';
+  durationSec: number;
+  target: CacheTarget;
+  outputPath: string;
+}): string[] {
+  const { localClip, kind, durationSec, target, outputPath } = params;
+  const { width, height, fps, crf, preset } = target;
+  const args: string[] = [
+    '-y',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-progress',
+    'pipe:1',
+  ];
+  if (kind === 'image') {
+    args.push('-loop', '1', '-framerate', String(fps), '-t', durationSec.toFixed(3));
+  }
+  args.push('-i', localClip);
+  args.push(
+    '-vf',
+    `scale=${width}:${height}:force_original_aspect_ratio=increase,` +
+      `crop=${width}:${height},setsar=1,fps=${fps}`
+  );
+  args.push('-t', durationSec.toFixed(3));
+  args.push(
+    '-c:v',
+    'libx264',
+    '-pix_fmt',
+    'yuv420p',
+    '-preset',
+    preset,
+    '-crf',
+    String(crf),
+    '-an'
+  );
+  args.push(outputPath);
+  return args;
+}
+
+async function pLimit<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>
+): Promise<void> {
+  const queue = items.map((item, i) => ({ item, i }));
+  const runners = Array.from({ length: Math.min(Math.max(limit, 1), queue.length) }, async () => {
+    while (true) {
+      const next = queue.shift();
+      if (!next) return;
+      await worker(next.item, next.i);
+    }
+  });
+  await Promise.all(runners);
+}
+
+// ---- Concat + final pass --------------------------------------------------
+
+async function writeConcatList(segments: string[], listPath: string): Promise<void> {
+  // ffmpeg concat demuxer espera paths con forward slashes; en Windows pueden
+  // tener backslashes — los convertimos para evitar fallos del parser.
+  const lines = segments.map((p) => `file '${p.replace(/\\/g, '/').replace(/'/g, "'\\''")}'`);
+  await fsp.writeFile(listPath, lines.join('\n') + '\n', 'utf-8');
+}
+
+function buildConcatArgs(listPath: string, outputPath: string): string[] {
+  return [
+    '-y',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-f',
+    'concat',
+    '-safe',
+    '0',
+    '-i',
+    listPath,
+    '-c',
+    'copy',
+    outputPath,
+  ];
+}
+
+function buildFinalPassArgs(params: {
+  inputPath: string;
+  audioPath: string | null;
+  subtitleFile: string | null;
+  target: CacheTarget;
+  audioKbps: number;
+  outputPath: string;
+}): string[] {
+  const { inputPath, audioPath, subtitleFile, target, audioKbps, outputPath } = params;
+  const args: string[] = [
+    '-y',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-progress',
+    'pipe:1',
+    '-i',
+    inputPath,
+  ];
+  if (audioPath) args.push('-i', audioPath);
+
+  if (subtitleFile) {
+    args.push('-vf', `ass=${subtitleFile}`);
+    args.push(
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-preset',
+      target.preset,
+      '-crf',
+      String(target.crf)
+    );
+  } else {
+    // Sin captions → copia el video tal cual; sólo re-mux para añadir audio si hay.
+    args.push('-c:v', 'copy');
+  }
+
+  if (audioPath) {
+    args.push('-map', '0:v', '-map', '1:a');
+    args.push('-c:a', 'aac', '-b:a', `${audioKbps}k`, '-shortest');
+  }
+
+  args.push('-movflags', '+faststart', outputPath);
+  return args;
+}
+
 // ---- API pública -----------------------------------------------------------
 
-/**
- * Punto de entrada del render. Lee el timeline y el plan, prepara los clips,
- * arma los subtítulos y ejecuta ffmpeg. Devuelve la URL pública del MP4.
- */
-export async function renderProject(
-  opts: RenderOptions
-): Promise<RenderResult> {
-  const { projectId, burnCaptions = true, signal, onProgress } = opts;
+export async function renderProject(opts: RenderOptions): Promise<RenderResult> {
+  const {
+    projectId,
+    burnCaptions = true,
+    signal,
+    onProgress,
+    presetId = null,
+    force = false,
+    parallelism = DEFAULT_PARALLELISM,
+  } = opts;
   const emit = (e: RenderProgressEvent) => {
     try {
       onProgress?.(e);
@@ -461,20 +505,24 @@ export async function renderProject(
     );
   }
   const plan = loadEditPlan(projectId);
-
   const filtered = applyEditPlan(timeline.clips, plan);
   if (filtered.length === 0) {
-    throw new Error(
-      'No hay clips para renderizar (el plan filtró todas las escenas).'
-    );
+    throw new Error('No hay clips para renderizar (el plan filtró todas las escenas).');
   }
+
+  // Target efectivo: preset override o config del timeline.
+  const preset: ExportPreset | null = getExportPreset(presetId);
+  const target: CacheTarget = preset
+    ? targetFromPreset(preset)
+    : { width: timeline.width, height: timeline.height, fps: timeline.fps, crf: 20, preset: 'fast' };
+  const audioKbps = preset?.audioKbps ?? 192;
 
   const safeId = safeProjectId(projectId);
   const projDir = projectDir(projectId);
   const cacheDir = path.join(projDir, 'render-cache');
   await fsp.mkdir(cacheDir, { recursive: true });
 
-  // Descargar / resolver cada clip y calcular su nueva posición temporal.
+  // ---- 1. Descargar/resolver clips ----------------------------------------
   emit({
     phase: 'downloading',
     message: 'Preparando clips…',
@@ -495,82 +543,146 @@ export async function renderProject(
       progress: (i + 1) / filtered.length,
     });
   }
+  const totalSec = cursor / timeline.fps;
 
-  // Subtítulos
+  // ---- 2. Captions --------------------------------------------------------
   let subtitleFile: string | null = null;
   if (burnCaptions && timeline.captions.length > 0) {
-    emit({
-      phase: 'building-captions',
-      message: 'Compilando subtítulos…',
-    });
+    emit({ phase: 'building-captions', message: 'Compilando subtítulos…' });
     const remapped = remapCaptions(timeline, resolved);
     if (remapped.length > 0) {
-      const ass = buildAssFile(remapped, timeline);
+      const ass = buildAssFile(remapped, timeline, target);
       const assPath = path.join(projDir, 'captions.ass');
       await fsp.writeFile(assPath, ass, 'utf-8');
-      // ffmpeg corre con cwd = projDir, así que el filtro recibe el basename
-      // sin paths absolutos (evita el infierno de escape en Windows).
       subtitleFile = 'captions.ass';
     }
   }
 
-  // Audio: si el timeline tiene una URL HTTPS, la descargamos al cache. Si
-  // es ya un path estático, ensureLocalClip-like sería overkill aquí — sólo
-  // resolvemos URLs locales y dejamos las remotas pasar tal cual a ffmpeg.
-  let audioPath: string | null = null;
-  if (timeline.audio?.src) {
-    audioPath = resolveLocalOrRemote(timeline.audio.src);
-  }
-
-  // Encoding
-  const totalSec = cursor / timeline.fps;
+  // ---- 3. Encoding por segmento (parallel + cache) ------------------------
   emit({
-    phase: 'encoding',
-    message: 'Renderizando con ffmpeg…',
+    phase: 'encoding-segments',
+    message: `Encoding ${resolved.length} segmento(s)…`,
     progress: 0,
-    detail: { durationSec: totalSec },
+    detail: { total: resolved.length, parallelism, force },
   });
+
+  const segmentPaths: string[] = new Array(resolved.length);
+  const segmentHashes: string[] = new Array(resolved.length);
+  let done = 0;
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
+  await pLimit(resolved, parallelism, async (r, i) => {
+    if (signal?.aborted) throw new Error('Render cancelado');
+    const hash = sceneHash(
+      {
+        id: r.clip.id,
+        sceneNumber: r.clip.sceneNumber,
+        startFrame: r.clip.startFrame,
+        endFrame: r.clip.startFrame + r.clip.durationFrames,
+        durationFrames: r.clip.durationFrames,
+        assets: [{ kind: r.clip.kind, src: r.clip.src }],
+        effects: r.clip.effects.map((k) => ({ kind: k, params: {} })),
+      },
+      target
+    );
+    const outPath = cachedSegmentPath(projDir, r.clip.id, hash);
+    segmentPaths[i] = outPath;
+    segmentHashes[i] = hash;
+
+    if (!force && isCached(outPath)) {
+      cacheHits += 1;
+    } else {
+      cacheMisses += 1;
+      const args = buildSegmentArgs({
+        localClip: r.localPath,
+        kind: r.clip.kind,
+        durationSec: r.clip.durationFrames / timeline.fps,
+        target,
+        outputPath: outPath,
+      });
+      await runFfmpeg({
+        args,
+        cwd: projDir,
+        totalSeconds: r.clip.durationFrames / timeline.fps,
+        signal,
+        label: `segment-${r.clip.sceneNumber}`,
+      });
+    }
+    done += 1;
+    emit({
+      phase: 'encoding-segments',
+      message: `Segmentos listos ${done}/${resolved.length}${cacheHits ? ` · cache ${cacheHits}` : ''}`,
+      progress: done / resolved.length,
+    });
+  });
+
+  // ---- 4. Concat demuxer --------------------------------------------------
+  emit({ phase: 'concat', message: 'Uniendo segmentos…' });
+  const concatListPath = path.join(projDir, 'render-cache', 'concat.txt');
+  await writeConcatList(segmentPaths, concatListPath);
+  const intermediatePath = path.join(projDir, 'render-cache', 'intermediate.mp4');
+  await runFfmpeg({
+    args: buildConcatArgs(concatListPath, intermediatePath),
+    cwd: projDir,
+    totalSeconds: 0,
+    signal,
+    label: 'concat',
+  });
+
+  // ---- 5. Final pass (captions + audio) -----------------------------------
+  let audioPath: string | null = null;
+  if (timeline.audio?.src) audioPath = resolveLocalOrRemote(timeline.audio.src);
 
   const outputPath = path.join(projDir, 'edited.mp4');
-  const ffArgs = buildFfmpegArgs({
-    clips: resolved.map((r) => ({
-      path: r.localPath,
-      kind: r.clip.kind,
-      durationSec: r.clip.durationFrames / timeline.fps,
-    })),
-    width: timeline.width,
-    height: timeline.height,
-    fps: timeline.fps,
-    audioPath,
-    subtitleFile,
-    outputPath,
-  });
 
-  await runFfmpeg({
-    args: ffArgs,
-    cwd: projDir,
-    totalSeconds: totalSec,
-    signal,
-    onProgress: (p) =>
-      emit({
-        phase: 'encoding',
-        message: 'Renderizando…',
-        progress: p,
+  if (!subtitleFile && !audioPath) {
+    // Sin captions ni audio → mover el intermediate como output final.
+    await fsp.copyFile(intermediatePath, outputPath);
+    emit({ phase: 'final-pass', message: 'Sin captions ni audio — copia directa.', progress: 1 });
+  } else {
+    emit({
+      phase: 'final-pass',
+      message: subtitleFile ? 'Quemando captions + audio…' : 'Añadiendo audio…',
+      progress: 0,
+    });
+    await runFfmpeg({
+      args: buildFinalPassArgs({
+        inputPath: intermediatePath,
+        audioPath,
+        subtitleFile,
+        target,
+        audioKbps,
+        outputPath,
       }),
-  });
+      cwd: projDir,
+      totalSeconds: totalSec,
+      signal,
+      onProgress: (p) =>
+        emit({ phase: 'final-pass', message: 'Final pass…', progress: p }),
+      label: 'final-pass',
+    });
+  }
 
+  // ---- 6. Limpieza de cache antiguo ---------------------------------------
+  pruneCache(projDir, new Set(segmentPaths), 30);
+
+  // ---- 7. Persistir metadata ---------------------------------------------
   const result: RenderResult = {
     projectId: safeId,
     outputPath,
     staticPath: `/assets/output/${safeId}/edited.mp4`,
     url: `${PUBLIC_BASE_URL}/assets/output/${safeId}/edited.mp4`,
     durationSeconds: totalSec,
-    width: timeline.width,
-    height: timeline.height,
-    fps: timeline.fps,
+    width: target.width,
+    height: target.height,
+    fps: target.fps,
     clipCount: resolved.length,
     burnedCaptions: !!subtitleFile,
     renderedAt: new Date().toISOString(),
+    presetId: preset?.id ?? null,
+    cacheHits,
+    cacheMisses,
   };
 
   await fsp.writeFile(
@@ -581,33 +693,19 @@ export async function renderProject(
 
   log.info(
     `render listo projectId=${safeId} clips=${resolved.length} ` +
-      `dur=${totalSec.toFixed(2)}s captions=${result.burnedCaptions}`
+      `dur=${totalSec.toFixed(2)}s captions=${result.burnedCaptions} ` +
+      `cache=${cacheHits}/${resolved.length} preset=${preset?.id ?? '-'}`
   );
   emit({
     phase: 'done',
     message: 'Render completo',
-    detail: { url: result.url, durationSec: totalSec },
+    detail: { url: result.url, durationSec: totalSec, cacheHits, presetId: preset?.id ?? null },
   });
 
   return result;
 }
 
-function resolveLocalOrRemote(src: string): string {
-  if (src.startsWith('/assets/')) {
-    return path.join(PROJECT_ROOT, src.replace(/^\/+/, ''));
-  }
-  try {
-    const u = new URL(src);
-    if (u.pathname.startsWith('/assets/')) {
-      return path.join(PROJECT_ROOT, u.pathname.replace(/^\/+/, ''));
-    }
-  } catch {
-    /* not a URL */
-  }
-  return src;
-}
-
-/** Devuelve el último render persistido del proyecto (o null si no existe). */
+/** Devuelve el último render persistido del proyecto. */
 export function loadLastRender(projectId: string): RenderResult | null {
   try {
     const file = path.join(projectDir(projectId), 'render.json');

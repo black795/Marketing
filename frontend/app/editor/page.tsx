@@ -35,10 +35,34 @@ export default function EditorSelectPage({
           </p>
         </header>
 
-        <div className="grid flex-1 grid-cols-1 content-center gap-6 md:grid-cols-2">
+        <div className="grid flex-1 grid-cols-1 content-center gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <EditorCard
+            href={`/storyboard${qs}`}
+            emoji="🎬"
+            title="Storyboard Engine"
+            description="Dirige tus escenas IA: grid drag&drop, prompt por escena, versionado y sidebar de materiales."
+            accent="pink"
+            bullets={['Edición por escena', 'Prompt + regen IA', 'Versionado y autosave']}
+          />
+          <EditorCard
+            href={`/timeline${qs}`}
+            emoji="🎚️"
+            title="Smart Timeline"
+            description="Vista pro tipo Premiere: pistas separadas (video/voz/música/sfx/captions), trim/split/snap, scrubbing, IA actions."
+            accent="yellow"
+            bullets={['Tracks por categoría', 'Trim · Split · Snap', 'Edit by prompt']}
+          />
+          <EditorCard
+            href={`/styles${qs}`}
+            emoji="🎨"
+            title="Style Engine"
+            description="8 presets virales (TikTok · Hormozi · MrBeast · Podcast · Documental · Gaming · Luxury · Anime) con live preview."
+            accent="pink"
+            bullets={['8 packs editoriales', 'Prompt-to-style', 'Live preview por escena']}
+          />
           <EditorCard
             href={`/editor/remotion${qs}`}
-            emoji="🎬"
+            emoji="🎞️"
             title="Remotion Editor"
             description="Montaje y render programático: escenas, transiciones y efectos compuestos en código React."
             accent="yellow"
@@ -51,6 +75,14 @@ export default function EditorSelectPage({
             description="Subtítulos dinámicos estilo redes sociales: karaoke, word highlighting y estilos virales."
             accent="pink"
             bullets={['Auto-captions sincronizadas', 'Karaoke y word highlight', 'Estilos virales (TikTok)']}
+          />
+          <EditorCard
+            href={`/export${qs}`}
+            emoji="📤"
+            title="Export Pipeline"
+            description="Render incremental con cache de segmentos · 7 presets de plataforma · jobs paralelos."
+            accent="yellow"
+            bullets={['Cache por hash', 'Paralelismo configurable', 'TikTok / Reels / Shorts / LinkedIn / 1:1 / 16:9']}
           />
         </div>
 

@@ -2,20 +2,23 @@ import { Router, Request, Response } from 'express';
 import { openSseStream } from '../services/sse';
 import { createLogger, newId } from '../services/logger';
 import { loadLastRender, renderProject } from '../services/render';
+import { EXPORT_PRESETS } from '../services/render-presets';
 
 /**
  * Render del video editado.
  *
- *   POST /api/render/:projectId  (SSE)
- *     Construye el MP4 final desde el `timeline.json` + `edit-plan.json` y
- *     emite eventos `progress` / `done` / `error`. Acepta body opcional
- *     `{ burnCaptions?: boolean }` (default true).
- *
- *   GET  /api/render/:projectId
- *     Devuelve la metadata del último render (200) o 404 si nunca se hizo.
+ *   GET  /api/render/presets             — lista los export presets disponibles.
+ *   GET  /api/render/:projectId          — metadata del último render (404 si nunca).
+ *   POST /api/render/:projectId  (SSE)   — renderiza con cache incremental.
+ *     Body: { burnCaptions?, presetId?, force?, parallelism? }
+ *     Eventos: start | progress | done | cancelled | error
  */
 const router = Router();
 const log = createLogger('render-api');
+
+router.get('/render/presets', (_req: Request, res: Response) => {
+  res.status(200).json({ success: true, presets: EXPORT_PRESETS });
+});
 
 router.get('/render/:projectId', (req: Request, res: Response) => {
   const { projectId } = req.params;
@@ -32,8 +35,19 @@ router.get('/render/:projectId', (req: Request, res: Response) => {
 router.post('/render/:projectId', async (req: Request, res: Response) => {
   const requestId = (res.locals.requestId as string) || newId('req');
   const { projectId } = req.params;
-  const body = (req.body || {}) as { burnCaptions?: boolean };
-  const burnCaptions = body.burnCaptions !== false; // default true
+  const body = (req.body || {}) as {
+    burnCaptions?: boolean;
+    presetId?: string | null;
+    force?: boolean;
+    parallelism?: number;
+  };
+  const burnCaptions = body.burnCaptions !== false;
+  const presetId = typeof body.presetId === 'string' ? body.presetId : null;
+  const force = body.force === true;
+  const parallelism =
+    typeof body.parallelism === 'number' && body.parallelism > 0
+      ? Math.min(body.parallelism, 8)
+      : undefined;
   const routeLog = log.child({ requestId, projectId });
 
   const abort = new AbortController();
@@ -48,13 +62,16 @@ router.post('/render/:projectId', async (req: Request, res: Response) => {
 
   stream.send({
     event: 'start',
-    data: { projectId, burnCaptions, requestId },
+    data: { projectId, burnCaptions, presetId, force, parallelism, requestId },
   });
 
   try {
     const result = await renderProject({
       projectId,
       burnCaptions,
+      presetId,
+      force,
+      parallelism,
       signal: abort.signal,
       onProgress: (e) => {
         if (stream.isClientGone()) return;
