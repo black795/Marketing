@@ -1,4 +1,5 @@
 import { createLogger, type LogContext } from '../logger';
+import { isSandboxEnabled, placeholderImage } from '../sandbox';
 
 const WORKER_URL =
   process.env.PYTHON_WORKER_URL || 'http://localhost:5000';
@@ -207,6 +208,19 @@ export async function generateImage(
 ): Promise<GenerateImageResult> {
   const ctx = input.logContext;
   const shortPrompt = input.prompt.slice(0, 60).replace(/\s+/g, ' ');
+
+  // Short-circuit: sandbox mode devuelve un SVG inline determinista.
+  if (isSandboxEnabled()) {
+    const seedKey = String(ctx?.sceneId ?? ctx?.jobId ?? input.prompt);
+    const url = placeholderImage({
+      prompt: input.prompt,
+      aspectRatio: input.aspectRatio,
+      seedKey,
+      label: ctx?.sceneId !== undefined ? `Escena ${ctx.sceneId}` : '🧪 SANDBOX',
+    });
+    log.info(`🧪 sandbox image placeholder (prompt="${shortPrompt}…")`, ctx);
+    return { image_url: url };
+  }
 
   for (let i = 1; i <= MAX_RETRIES; i++) {
     // Cortar antes de cada intento si ya se canceló: no malgastamos una

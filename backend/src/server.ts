@@ -14,6 +14,7 @@ import timelineRouter from './routes/timeline';
 import editPlanRouter from './routes/edit-plan';
 import renderRouter from './routes/render';
 import editingProjectRouter from './routes/editing-project';
+import sandboxRouter from './routes/sandbox';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
 import { createLogger, newId } from './services/logger';
 import { metrics, recordStatus, snapshotMetrics } from './services/metrics';
@@ -141,6 +142,7 @@ app.use('/api', timelineRouter);
 app.use('/api', editPlanRouter);
 app.use('/api', renderRouter);
 app.use('/api', editingProjectRouter);
+app.use('/api', sandboxRouter);
 
 // 404 — ninguna ruta coincidió.
 app.use((req, res) => {

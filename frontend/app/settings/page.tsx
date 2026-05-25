@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import CaptionProviderPanel from '@/components/settings/CaptionProviderPanel';
+import SandboxPanel from '@/components/settings/SandboxPanel';
 
 /**
  * ⚙️ Configuración de APIs.
@@ -26,6 +27,26 @@ export default function SettingsPage() {
             Conecta y prueba los servicios externos del sistema.
           </p>
         </header>
+
+        <section className="mb-6 rounded-lg border border-amber-200 bg-white p-6 shadow-sm">
+          <header className="mb-5 flex items-center gap-3">
+            <span
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-lg"
+              aria-hidden="true"
+            >
+              🧪
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">
+                Sandbox Mode
+              </h2>
+              <p className="text-xs text-neutral-500">
+                Probá el pipeline sin gastar APIs caras (Replicate image / video / avatar).
+              </p>
+            </div>
+          </header>
+          <SandboxPanel />
+        </section>
 
         <section className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
           <header className="mb-5 flex items-center gap-3">

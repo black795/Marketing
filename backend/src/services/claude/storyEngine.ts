@@ -34,6 +34,21 @@ function getClient(): Replicate {
   return cachedClient;
 }
 
+/** Captura @imagen1, @imagen2, @img3 … en cualquier campo del prompt. */
+const MENTION_RE = /@(?:imagen|img)(\d+)/gi;
+
+function extractMentionedSlots(...texts: Array<string | undefined>): number[] {
+  const set = new Set<number>();
+  for (const t of texts) {
+    if (!t) continue;
+    for (const m of t.matchAll(MENTION_RE)) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0) set.add(n);
+    }
+  }
+  return Array.from(set).sort((a, b) => a - b);
+}
+
 function buildUserPrompt(input: StoryEngineInput): string {
   const parts: string[] = [
     `Prompt visual (qué ver, estilo, sujetos, composición, ambiente):\n${input.visualPrompt}`,
@@ -60,6 +75,30 @@ function buildUserPrompt(input: StoryEngineInput): string {
     parts.push(
       `Referencias del personaje: ${refCount} imagen(es) del personaje protagonista están disponibles para el modelo de imagen (frente, perfil, cuerpo, expresiones, ropa). Escribe los image_prompt asumiendo que el modelo VERÁ esas referencias y debe mantener identidad exacta (rostro, estructura facial, ojos, pelo, complexión, ropa cuando aplique). Describe la pose, escena y emoción; deja la identidad a las referencias.`
     );
+
+    // Si el usuario mencionó @imagenN explícitamente, traducimos al lenguaje
+    // que Claude entiende y le pedimos que propague la mención al image_prompt
+    // de cada escena. Así el generador de imágenes sabe qué referencia usar
+    // por escena, no sólo "alguna del paquete".
+    const mentions = extractMentionedSlots(input.visualPrompt, input.narrativePrompt);
+    const valid = mentions.filter((n) => n <= refCount);
+    if (valid.length > 0) {
+      const list = valid.map((n) => `@imagen${n} → referencia #${n}`).join(', ');
+      parts.push(
+        `Menciones a referencias específicas: el usuario nombró ${list}. ` +
+          `Cuando una escena dependa de una referencia particular, conservá el token "@imagenN" ` +
+          `dentro del image_prompt de esa escena (al inicio) para que el generador de imágenes ` +
+          `priorice esa referencia exacta — además del paquete general. Si el usuario menciona ` +
+          `dos referencias en una misma escena (p. ej. "@imagen1 con @imagen2"), incluí ambas.`
+      );
+      const invalid = mentions.filter((n) => n > refCount);
+      if (invalid.length > 0) {
+        parts.push(
+          `Advertencia: el usuario mencionó @imagen${invalid.join(', @imagen')} pero solo hay ${refCount} referencia(s). ` +
+            `Ignorá esas menciones inválidas y no las incluyas en los image_prompt.`
+        );
+      }
+    }
   }
 
   parts.push(`Modelo destino para las imágenes: ${input.model}`);

@@ -182,6 +182,44 @@ export default function Home() {
   const [pendingCompare, setPendingCompare] =
     useState<PendingCompare | null>(null);
 
+  // ---------- Navegación entre fases (preserva datos) ----------
+  /**
+   * Salta a una fase anterior sin destruir nada: aborta streams en vuelo,
+   * limpia UI transitoria (progreso, selecciones) y cambia `phase`. Los
+   * datos (script, result, videoScenes, historyByScene, promptCtx, settings)
+   * se mantienen — el usuario puede re-disparar lo que quiera desde ahí.
+   */
+  function goToPhase(target: Phase) {
+    if (target === phase) return;
+    streamAbortRef.current?.abort();
+    videoStreamAbortRef.current?.abort();
+    regenAbortRef.current?.abort();
+    abortCurrentSingleRegen('phase-jump');
+    setStreamProgress(null);
+    setVideoStreamProgress(null);
+    setRegenProgress(null);
+    setStreamWarning(null);
+    setVideoStreamWarning(null);
+    setRegenError(null);
+    setSelectionMode(false);
+    setSelectedForRegen(new Set());
+    setRegeneratingNumbers(new Set());
+    setRegenerating(false);
+    setSingleRegenError(null);
+    setPendingCompare(null);
+    setPhase(target);
+  }
+
+  /** Reachability por step — qué tan atrás puede saltar el usuario. */
+  const reachable = {
+    prompts: true,
+    script: !!script,
+    images: !!result,
+    videoReview: !!result,
+    videoResult: videoScenes.length > 0,
+    assets: !!result && videoScenes.some((v) => !!v.video_url || !!v.local_url),
+  } as const;
+
   // ---------- Reset ----------
   function handleReset() {
     streamAbortRef.current?.abort();
@@ -1088,7 +1126,12 @@ export default function Home() {
           </p>
         </header>
 
-        <PhaseStepper phase={phase} />
+        <PhaseStepper
+          phase={phase}
+          reachable={reachable}
+          onJump={goToPhase}
+          onHardReset={handleReset}
+        />
 
         {phase === 'idle' && (
           <EmptyState>
@@ -1398,45 +1441,131 @@ function countDone(map: Map<number, SceneStreamStatus>): number {
 
 // ---------- subcomponentes locales ----------
 
-function PhaseStepper({ phase }: { phase: Phase }) {
-  const steps: Array<{ key: Phase | Phase[]; label: string }> = [
-    { key: ['idle', 'generating-script'], label: '1 · Prompts' },
-    { key: 'script-review', label: '2 · Guion' },
-    { key: ['generating-images', 'result'], label: '3 · Imágenes' },
-    { key: 'video-review', label: '4 · Revisar' },
-    { key: ['generating-videos', 'video-result'], label: '5 · Video' },
-    { key: 'preparing-assets', label: '6 · Assets' },
+interface StepperReachability {
+  prompts: boolean;
+  script: boolean;
+  images: boolean;
+  videoReview: boolean;
+  videoResult: boolean;
+  assets: boolean;
+}
+
+function PhaseStepper({
+  phase,
+  reachable,
+  onJump,
+  onHardReset,
+}: {
+  phase: Phase;
+  reachable: StepperReachability;
+  onJump: (target: Phase) => void;
+  onHardReset: () => void;
+}) {
+  const steps: Array<{
+    keys: Phase[];
+    label: string;
+    target: Phase;
+    enabled: boolean;
+  }> = [
+    {
+      keys: ['idle', 'generating-script'],
+      label: '1 · Prompts',
+      target: 'idle',
+      enabled: reachable.prompts,
+    },
+    {
+      keys: ['script-review'],
+      label: '2 · Guion',
+      target: 'script-review',
+      enabled: reachable.script,
+    },
+    {
+      keys: ['generating-images', 'result'],
+      label: '3 · Imágenes',
+      target: 'result',
+      enabled: reachable.images,
+    },
+    {
+      keys: ['video-review'],
+      label: '4 · Revisar',
+      target: 'video-review',
+      enabled: reachable.videoReview,
+    },
+    {
+      keys: ['generating-videos', 'video-result'],
+      label: '5 · Video',
+      target: 'video-result',
+      enabled: reachable.videoResult,
+    },
+    {
+      keys: ['preparing-assets'],
+      label: '6 · Assets',
+      target: 'preparing-assets',
+      enabled: reachable.assets,
+    },
   ];
 
-  function isActive(key: Phase | Phase[]): boolean {
-    return Array.isArray(key) ? key.includes(phase) : key === phase;
-  }
-
   return (
-    <ol className="mb-6 flex flex-wrap items-center gap-2 text-xs">
-      {steps.map((step, idx) => {
-        const active = isActive(step.key);
-        const isLast = idx === steps.length - 1;
-        return (
-          <li key={step.label} className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 font-semibold transition ${
-                active
-                  ? 'bg-brand-pink text-white'
-                  : 'bg-neutral-100 text-neutral-500'
-              }`}
-            >
-              {step.label}
-            </span>
-            {!isLast && (
-              <span aria-hidden="true" className="text-neutral-300">
-                →
-              </span>
-            )}
-          </li>
-        );
-      })}
-    </ol>
+    <div className="mb-6 flex flex-wrap items-center gap-3 text-xs">
+      <button
+        type="button"
+        onClick={() => onJump('idle')}
+        className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 font-semibold text-neutral-600 transition hover:border-brand-pink hover:text-brand-pink"
+        title="Volver al inicio sin perder lo generado"
+      >
+        ← Inicio
+      </button>
+      <ol className="flex flex-wrap items-center gap-2">
+        {steps.map((step, idx) => {
+          const active = step.keys.includes(phase);
+          const isLast = idx === steps.length - 1;
+          // Permitimos saltar SI: está habilitada (datos existen) y no es la fase actual.
+          const canJump = step.enabled && !active;
+          const baseCls =
+            'inline-flex items-center rounded-full px-3 py-1 font-semibold transition';
+          const stateCls = active
+            ? 'bg-brand-pink text-white shadow-sm'
+            : canJump
+              ? 'bg-neutral-100 text-neutral-700 hover:bg-pink-50 hover:text-brand-pink cursor-pointer'
+              : 'bg-neutral-50 text-neutral-300 cursor-not-allowed';
+          return (
+            <li key={step.label} className="flex items-center gap-2">
+              {canJump ? (
+                <button
+                  type="button"
+                  onClick={() => onJump(step.target)}
+                  className={`${baseCls} ${stateCls}`}
+                  title={`Volver a ${step.label}`}
+                >
+                  {step.label}
+                </button>
+              ) : (
+                <span
+                  className={`${baseCls} ${stateCls}`}
+                  aria-current={active ? 'step' : undefined}
+                  title={active ? 'Fase actual' : 'Aún no disponible'}
+                >
+                  {step.label}
+                </span>
+              )}
+              {!isLast && (
+                <span aria-hidden="true" className="text-neutral-300">
+                  →
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <button
+        type="button"
+        onClick={onHardReset}
+        className="ml-auto inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-1 text-[11px] font-semibold text-neutral-400 transition hover:border-red-200 hover:text-red-600"
+        title="Borrar todo y empezar de cero"
+      >
+        Empezar de cero
+      </button>
+    </div>
   );
 }
 

@@ -1,6 +1,10 @@
 import { createLogger, type LogContext } from '../logger';
+import { isSandboxEnabled, placeholderVideoUrl } from '../sandbox';
 
 const WORKER_URL = process.env.PYTHON_WORKER_URL || 'http://localhost:5000';
+
+const PUBLIC_BASE_URL =
+  process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
 
 // El avatar/lipsync es un render de video: puede tardar varios minutos.
 const REQUEST_TIMEOUT_MS = 300_000;
@@ -194,6 +198,26 @@ export async function generateAvatar(
   input: GenerateAvatarInput
 ): Promise<GenerateAvatarResult> {
   const ctx = input.logContext;
+
+  // Short-circuit: sandbox mode devuelve un mp4 placeholder (sin lipsync).
+  if (isSandboxEnabled()) {
+    try {
+      const seedKey = String(ctx?.jobId ?? input.voiceScript ?? input.videoPrompt ?? 'avatar');
+      const url = await placeholderVideoUrl({
+        prompt: input.videoPrompt ?? input.voiceScript ?? 'avatar',
+        aspectRatio: '9:16',
+        durationSec: 6,
+        seedKey,
+        publicBaseUrl: PUBLIC_BASE_URL,
+      });
+      log.info(`🧪 sandbox avatar placeholder → ${url}`, ctx);
+      return { video_url: url };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error(`✗ sandbox avatar placeholder falló: ${msg}`, ctx);
+      return { video_url: null, video_error: `sandbox placeholder error: ${msg}` };
+    }
+  }
 
   for (let i = 1; i <= MAX_RETRIES; i++) {
     if (input.abortSignal?.aborted) {

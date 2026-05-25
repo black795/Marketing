@@ -1,5 +1,11 @@
+import { isSandboxEnabled, placeholderVideoUrl } from '../sandbox';
+
 const WORKER_URL =
   process.env.PYTHON_WORKER_URL || 'http://localhost:5000';
+
+/** Base pública del gateway (lo usamos para servir mp4s sandbox vía /assets). */
+const PUBLIC_BASE_URL =
+  process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 4000}`;
 
 const REQUEST_TIMEOUT_MS = 240_000;
 const MAX_RETRIES = 2;
@@ -195,6 +201,25 @@ export async function generateVideo(
   input: GenerateVideoInput
 ): Promise<GenerateVideoResult> {
   const shortPrompt = input.prompt.slice(0, 60).replace(/\s+/g, ' ');
+
+  // Short-circuit: sandbox mode devuelve un mp4 placeholder cacheado.
+  if (isSandboxEnabled()) {
+    try {
+      const url = await placeholderVideoUrl({
+        prompt: input.prompt,
+        aspectRatio: input.aspectRatio,
+        durationSec: input.duration ?? 5,
+        seedKey: input.prompt,
+        publicBaseUrl: PUBLIC_BASE_URL,
+      });
+      console.log(`[videoWorker] 🧪 sandbox placeholder mp4 prompt="${shortPrompt}…" → ${url}`);
+      return { video_url: url };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[videoWorker] ✗ sandbox placeholder falló: ${msg}`);
+      return { video_url: null, video_error: `sandbox placeholder error: ${msg}` };
+    }
+  }
 
   for (let i = 1; i <= MAX_RETRIES; i++) {
     if (input.abortSignal?.aborted) {

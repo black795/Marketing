@@ -14,6 +14,7 @@ import ReferenceImagesUploader, {
 import LoadingButton from './loading/LoadingButton';
 import ProgressBar from './loading/ProgressBar';
 import VoiceFieldWrapper from './voice/VoiceFieldWrapper';
+import MentionTextarea from './prompts/MentionTextarea';
 
 const MODEL_OPTIONS = [
   { value: 'nano-banana-pro', label: 'Nano Banana Pro' },
@@ -154,12 +155,15 @@ export default function PromptForm({
           disabled={loading}
           fieldLabel="el prompt visual"
         >
-          <textarea
+          <MentionTextarea
             value={visualPrompt}
-            onChange={(e) => setVisualPrompt(e.target.value)}
+            onChange={setVisualPrompt}
+            references={references}
+            disabled={loading}
             required
             rows={4}
-            placeholder="Ej: editorial bright, mujer joven con outfit oversized en estudio de cerámica, luz natural lateral, paleta pastel, textura iPhone candid…"
+            placeholder="Ej: editorial bright, mujer joven con outfit oversized en estudio de cerámica, luz natural lateral, paleta pastel, textura iPhone candid… o mencioná @imagen1 para anclar la identidad."
+            ariaLabel="Referencias para mencionar en el prompt visual"
             className="w-full rounded-md border border-neutral-300 px-3 py-2 pr-14 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
           />
         </VoiceFieldWrapper>
@@ -181,11 +185,14 @@ export default function PromptForm({
           disabled={loading}
           fieldLabel="el prompt narrativo"
         >
-          <textarea
+          <MentionTextarea
             value={narrativePrompt}
-            onChange={(e) => setNarrativePrompt(e.target.value)}
+            onChange={setNarrativePrompt}
+            references={references}
+            disabled={loading}
             rows={4}
-            placeholder="Ej: arco de inseguridad → flow → orgullo. La protagonista llega frustrada, encuentra ritmo trabajando el barro, termina sosteniendo la pieza terminada con calma…"
+            placeholder="Ej: arco de inseguridad → flow → orgullo. Podés mencionar referencias como '@imagen1 entra al estudio frustrada, @imagen2 trabajando el barro'…"
+            ariaLabel="Referencias para mencionar en el prompt narrativo"
             className="w-full rounded-md border border-neutral-300 px-3 py-2 pr-14 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
           />
         </VoiceFieldWrapper>
