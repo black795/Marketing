@@ -20,7 +20,7 @@ export default function ModeSelectPage() {
           </p>
         </header>
 
-        <div className="grid flex-1 grid-cols-1 content-center gap-6 md:grid-cols-2">
+        <div className="grid flex-1 grid-cols-1 content-center gap-6 md:grid-cols-2 lg:grid-cols-3">
           <ModeCard
             href="/avatar"
             emoji="🎭"
@@ -44,6 +44,18 @@ export default function ModeSelectPage() {
               'Claude escribe el guion',
               'Imágenes por escena con Replicate',
               'Video y regeneración avanzada',
+            ]}
+          />
+          <ModeCard
+            href="/editor/manual"
+            emoji="📎"
+            title="Edición Manual (Clips Importados)"
+            description="Arma tu video directamente a partir de tus propios clips de video o imágenes sin usar IA generativa."
+            accent="pink"
+            bullets={[
+              'Sube tus propios videos o fotos',
+              'Organiza tu timeline',
+              'Aplica subtítulos dinámicos o estilos',
             ]}
           />
         </div>

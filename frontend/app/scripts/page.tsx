@@ -1105,10 +1105,35 @@ export default function Home() {
       camera: v.camera,
       lighting: v.lighting,
       emotion: v.emotion,
+      imported_video_url: null, // Reset imported clip when restoring an AI version
     });
     if (updated) {
       pushHistoryVersion(sceneNumber, updated, 'restore', `restaurada`);
     }
+  }
+
+  function handleImportClip({ sceneNumber, videoUrl }: { sceneNumber: number; videoUrl: string }) {
+    const history = historyByScene.get(sceneNumber) ?? [];
+    const currentScene = result?.scenes.find(s => s.scene_number === sceneNumber);
+    
+    if (currentScene && currentScene.image_url) {
+      // Save current AI video to history if not there
+      const alreadyInHistory = history.some(v => v.image_url === currentScene.image_url);
+      if (!alreadyInHistory) {
+        pushHistoryVersion(sceneNumber, currentScene, 'initial');
+      }
+    }
+
+    const updated = applySceneUpdate(sceneNumber, {
+      imported_video_url: videoUrl
+    });
+    
+    if (updated) {
+      pushHistoryVersion(sceneNumber, updated, 'edit', 'clip importado manualmente');
+    }
+    
+    // Al importar un clip, cerramos el diálogo para que el usuario vea el cambio en la vista principal
+    setSelectedScene(null);
   }
 
   // ---------- Render ----------
@@ -1392,6 +1417,8 @@ export default function Home() {
         onRegenerate={handleRegenerateSingle}
         onCancelRegenerate={handleCancelSingleRegen}
         onRestoreVersion={handleRestoreVersion}
+        projectId={result?.projectId || script?.projectId}
+        onImportClip={handleImportClip}
       />
 
       <CompareDialog

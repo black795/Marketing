@@ -41,9 +41,14 @@ export interface StoryboardState {
 }
 
 export function initialState(project: TimelineProject): StoryboardState {
+  // Defensa: si llega un proyecto sin scenes (json legacy o corrupto), tratamos
+  // como array vacío para no crashear el árbol. El loader debería filtrar esto
+  // antes, pero la red puede traer cualquier shape.
+  const scenes = Array.isArray(project.scenes) ? project.scenes : [];
+  const safeProject = scenes === project.scenes ? project : { ...project, scenes };
   return {
-    project,
-    selectedSceneId: project.scenes[0]?.id ?? null,
+    project: safeProject,
+    selectedSceneId: scenes[0]?.id ?? null,
     sidebarTab: 'images',
     drag: { draggingSceneId: null, overIndex: -1 },
     saveState: 'idle',

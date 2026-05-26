@@ -225,8 +225,8 @@ export default function AssetsHubPanel({
           return {
             scene_number: s.scene_number,
             image_url: s.image_url ?? null,
-            video_url: v?.video_url ?? null,
-            local_url: v?.local_url ?? null,
+            video_url: s.imported_video_url ?? v?.video_url ?? null,
+            local_url: s.imported_video_url ? null : (v?.local_url ?? null),
             duration: s.duration,
             narration: s.narration,
           };

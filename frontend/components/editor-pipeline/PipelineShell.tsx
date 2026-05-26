@@ -273,6 +273,12 @@ function NoProjectEmptyState() {
           >
             🎭 Ir a Avatar
           </Link>
+          <Link
+            href="/editor/manual"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+          >
+            📎 Edición desde Clips
+          </Link>
         </div>
         <div className="mt-6 text-[11px] text-neutral-400">
           Puedes seguir abriendo las herramientas individuales:{' '}

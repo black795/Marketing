@@ -45,10 +45,12 @@ export function useStoryboardProject(projectId: string | null): StoryboardLoadRe
 
     (async () => {
       try {
-        // 1. ¿Existe ya el editing-project.json?
+        // 1. ¿Existe ya el editing-project.json? Sólo lo aceptamos si tiene
+        // un array de scenes — si no, está corrupto/legacy y derivamos del
+        // timeline para reconstruirlo en el próximo autosave.
         const persisted = await loadEditingProject(projectId);
         if (cancelled) return;
-        if (persisted) {
+        if (persisted && Array.isArray(persisted.scenes) && persisted.scenes.length > 0) {
           setResult({
             status: 'ready',
             project: persisted,

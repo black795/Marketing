@@ -20,6 +20,7 @@ import {
 import LoadingButton from './loading/LoadingButton';
 import ProgressBar from './loading/ProgressBar';
 import VoiceFieldWrapper from './voice/VoiceFieldWrapper';
+import { uploadClip } from '@/lib/clips-api';
 
 interface SceneEditPanelProps {
   scene: Scene | null;
@@ -37,6 +38,8 @@ interface SceneEditPanelProps {
   }) => void;
   onCancelRegenerate: () => void;
   onRestoreVersion: (sceneNumber: number, versionId: string) => void;
+  projectId?: string;
+  onImportClip?: (args: { sceneNumber: number; videoUrl: string }) => void;
 }
 
 /**
@@ -63,10 +66,12 @@ export default function SceneEditPanel({
   onRegenerate,
   onCancelRegenerate,
   onRestoreVersion,
+  projectId,
+  onImportClip,
 }: SceneEditPanelProps) {
   const open = scene !== null;
 
-  const [tab, setTab] = useState<'detail' | 'edit' | 'history'>('detail');
+  const [tab, setTab] = useState<'detail' | 'edit' | 'history' | 'import'>('detail');
   const [edit, setEdit] = useState<AdvancedEdit | null>(
     scene ? initialEditFromScene(scene) : null
   );
@@ -226,6 +231,9 @@ export default function SceneEditPanel({
                     {history.length}
                   </span>
                 </TabButton>
+                <TabButton active={tab === 'import'} onClick={() => setTab('import')}>
+                  📎 Importar
+                </TabButton>
               </nav>
             </header>
 
@@ -263,6 +271,14 @@ export default function SceneEditPanel({
                     onRestoreVersion(scene.scene_number, versionId)
                   }
                   disabled={regenerating}
+                />
+              )}
+
+              {tab === 'import' && (
+                <ImportClipTab
+                  projectId={projectId}
+                  sceneNumber={scene.scene_number}
+                  onImport={onImportClip}
                 />
               )}
             </div>
@@ -426,7 +442,15 @@ function DetailTab({
         className="relative mb-5 w-full overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100"
         style={{ aspectRatio: '9 / 16', maxHeight: '420px' }}
       >
-        {scene.image_url ? (
+        {scene.imported_video_url ? (
+          <video
+            src={scene.imported_video_url}
+            controls
+            className={`h-full w-full object-contain transition ${
+              regenerating ? 'opacity-40 blur-[1px]' : ''
+            }`}
+          />
+        ) : scene.image_url ? (
           <img
             src={scene.image_url}
             alt={scene.scene_title}
@@ -947,6 +971,170 @@ function RegeneratingOverlay({
           ? status
           : 'Generando nueva versión…'}
       </p>
+    </div>
+  );
+}
+
+// =====================================================================
+// ImportClipTab - Componente para importar videos locales o por URL
+// =====================================================================
+
+function ImportClipTab({
+  projectId,
+  sceneNumber,
+  onImport,
+}: {
+  projectId?: string;
+  sceneNumber: number;
+  onImport?: (args: { sceneNumber: number; videoUrl: string }) => void;
+}) {
+  const [url, setUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!url) return;
+    try {
+      new URL(url); // validación básica
+      setPreviewUrl(url);
+    } catch {
+      setError('La URL ingresada no es válida.');
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await handleFileUpload(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    await handleFileUpload(file);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setError(null);
+    if (!projectId) {
+      setError('Falta el ID del proyecto para subir el archivo.');
+      return;
+    }
+    
+    // Validación básica de tipo
+    if (!file.type.startsWith('video/')) {
+      setError('Por favor, selecciona un archivo de video (MP4, MOV, WebM).');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const res = await uploadClip(projectId, file);
+      if (res.success) {
+        setPreviewUrl(res.url);
+        setUrl(res.url); // Mantiene sincronizado el campo de URL
+      } else {
+        setError(res.error || 'Error desconocido al subir el archivo.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al subir el archivo.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const confirmImport = () => {
+    if (!previewUrl || !onImport) return;
+    onImport({ sceneNumber, videoUrl: previewUrl });
+  };
+
+  return (
+    <div className="space-y-6 pb-20 text-sm text-neutral-800">
+      <div className="space-y-4">
+        <h3 className="font-semibold text-neutral-900">1. Seleccionar clip de video</h3>
+        <p className="text-xs text-neutral-500">
+          Sube un video desde tu equipo o ingresa la URL directa a un archivo de video.
+        </p>
+
+        {/* Drag & Drop Zone */}
+        <div
+          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 text-center transition hover:border-brand-pink hover:bg-pink-50"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            className="hidden"
+            accept="video/mp4,video/quicktime,video/webm"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+          />
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-pink border-t-transparent"></div>
+              <span className="text-xs font-medium text-neutral-600">Subiendo clip...</span>
+            </div>
+          ) : (
+            <>
+              <svg className="mb-2 h-8 w-8 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="font-medium text-neutral-700">Haz clic o arrastra un video aquí</p>
+              <p className="mt-1 text-xs text-neutral-500">MP4, MOV, WebM (max 100MB)</p>
+            </>
+          )}
+        </div>
+
+        {/* URL Input */}
+        <form onSubmit={handleUrlSubmit} className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-neutral-700">O pegar una URL externa</label>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              placeholder="https://ejemplo.com/video.mp4"
+              className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!url || uploading}
+              className="rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-200 disabled:opacity-50"
+            >
+              Cargar
+            </button>
+          </div>
+        </form>
+
+        {error && <p className="text-xs text-red-600 bg-red-50 p-2 rounded">{error}</p>}
+      </div>
+
+      {previewUrl && (
+        <div className="space-y-4 rounded-lg border border-neutral-200 p-4">
+          <h3 className="font-semibold text-neutral-900">2. Vista previa y confirmación</h3>
+          <div className="aspect-video w-full overflow-hidden rounded bg-black">
+            <video
+              src={previewUrl}
+              controls
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <button
+            type="button"
+            className="w-full rounded-md bg-brand-pink py-2 text-sm font-semibold text-white transition hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2"
+            onClick={confirmImport}
+          >
+            Usar este clip en la escena
+          </button>
+        </div>
+      )}
     </div>
   );
 }

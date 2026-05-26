@@ -53,6 +53,7 @@ export interface Scene {
   duration: number;
   image_url?: string | null;
   image_error?: string;
+  imported_video_url?: string | null;
 }
 
 export interface Character {
