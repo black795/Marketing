@@ -11,10 +11,14 @@ export interface UploadClipResponse {
 
 export async function uploadClip(projectId: string, file: File): Promise<UploadClipResponse> {
   const formData = new FormData();
-  formData.append('file', file);
+  // projectId va PRIMERO por si multer lo lee del body, y también como query
+  // string como fallback (multer parsea fields en orden y a veces el field va
+  // a procesarse despues que el archivo).
   formData.append('projectId', projectId);
+  formData.append('file', file);
 
-  const response = await fetch(`${BACKEND_URL}/api/clips/upload`, {
+  const qs = `projectId=${encodeURIComponent(projectId)}`;
+  const response = await fetch(`${BACKEND_URL}/api/clips/upload?${qs}`, {
     method: 'POST',
     body: formData, // fetch automáticamente establece el Content-Type correcto para FormData
   });

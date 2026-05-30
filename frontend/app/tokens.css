@@ -1,0 +1,227 @@
+/* Tim Koda Creative OS - Design tokens
+   Tech / studio dark - electric blue + coral red */
+
+:root {
+  /* Surfaces */
+  --bg-0: #07080B;
+  --bg-1: #0C0E13;
+  --bg-2: #13161F;
+  --bg-3: #1A1E29;
+  --bg-4: #232838;
+  --bg-overlay: rgba(7, 8, 11, 0.72);
+
+  /* Borders */
+  --line: #1C202C;
+  --line-strong: #2A2F40;
+  --line-faint: #14171F;
+
+  /* Text */
+  --fg-1: #ECEEF5;
+  --fg-2: #9AA2B8;
+  --fg-3: #6A7187;
+  --fg-4: #454B5E;
+
+  /* Brand: electric blue */
+  --blue: #4C7DFF;
+  --blue-hi: #7AA0FF;
+  --blue-lo: #2E5BFF;
+  --blue-glow: rgba(76, 125, 255, 0.45);
+  --blue-soft: rgba(76, 125, 255, 0.12);
+  --blue-ring: rgba(76, 125, 255, 0.35);
+
+  /* Brand: coral red */
+  --red: #FF5C5C;
+  --red-hi: #FF8181;
+  --red-lo: #E14040;
+  --red-glow: rgba(255, 92, 92, 0.45);
+  --red-soft: rgba(255, 92, 92, 0.12);
+  --red-ring: rgba(255, 92, 92, 0.35);
+
+  /* Status */
+  --success: #2BD4A4;
+  --success-soft: rgba(43, 212, 164, 0.12);
+  --warning: #F5B544;
+  --warning-soft: rgba(245, 181, 68, 0.12);
+  --info: #4C7DFF;
+
+  /* Spacing */
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;
+  --s-5: 20px;  --s-6: 24px;  --s-7: 32px;  --s-8: 40px;
+  --s-9: 48px;  --s-10: 64px; --s-11: 80px;
+
+  /* Radii */
+  --r-1: 4px;  --r-2: 6px;  --r-3: 10px; --r-4: 14px;
+  --r-5: 18px; --r-6: 24px; --r-full: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 0 0 rgba(255,255,255,0.03) inset, 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px -8px rgba(0,0,0,0.5), 0 1px 0 0 rgba(255,255,255,0.04) inset;
+  --shadow-lg: 0 24px 64px -16px rgba(0,0,0,0.6), 0 1px 0 0 rgba(255,255,255,0.05) inset;
+  --shadow-glow-blue: 0 0 0 1px var(--blue-ring), 0 8px 32px -4px var(--blue-glow);
+  --shadow-glow-red:  0 0 0 1px var(--red-ring),  0 8px 32px -4px var(--red-glow);
+
+  /* Type */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Space Grotesk', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 120ms;
+  --t-med: 220ms;
+  --t-slow: 420ms;
+}
+
+/* Light mode */
+:root[data-theme="light"] {
+  --bg-0: #F4F1EA;
+  --bg-1: #EBE7DE;
+  --bg-2: #FFFFFF;
+  --bg-3: #F8F5EE;
+  --bg-4: #ECE7DB;
+  --bg-overlay: rgba(244, 241, 234, 0.72);
+  --line: #DDD7C8;
+  --line-strong: #C9C2B0;
+  --line-faint: #E7E2D4;
+  --fg-1: #15161A;
+  --fg-2: #4A4F5F;
+  --fg-3: #7A8095;
+  --fg-4: #ABB0BF;
+  --blue: #1E3A8A;
+  --blue-hi: #2E5BFF;
+  --blue-lo: #142A6E;
+  --blue-glow: rgba(30, 58, 138, 0.35);
+  --blue-soft: rgba(30, 58, 138, 0.08);
+  --blue-ring: rgba(30, 58, 138, 0.30);
+  --red: #DC2626;
+  --red-hi: #EF4444;
+  --red-lo: #B81C1C;
+  --red-glow: rgba(220, 38, 38, 0.30);
+  --red-soft: rgba(220, 38, 38, 0.08);
+  --red-ring: rgba(220, 38, 38, 0.30);
+}
+
+/* Scoped reset for the Koda OS shell - avoids breaking legacy Tailwind pages */
+.koda-os-root {
+  background: var(--bg-0);
+  color: var(--fg-1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+.koda-os-root *,
+.koda-os-root *::before,
+.koda-os-root *::after {
+  box-sizing: border-box;
+}
+
+.koda-os-root button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.koda-os-root input,
+.koda-os-root textarea,
+.koda-os-root select {
+  font-family: inherit;
+  color: inherit;
+}
+
+.koda-os-root ::selection {
+  background: var(--blue-soft);
+  color: var(--fg-1);
+}
+
+.koda-os-root::-webkit-scrollbar,
+.koda-os-root *::-webkit-scrollbar { width: 10px; height: 10px; }
+.koda-os-root::-webkit-scrollbar-track,
+.koda-os-root *::-webkit-scrollbar-track { background: transparent; }
+.koda-os-root::-webkit-scrollbar-thumb,
+.koda-os-root *::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 2px solid var(--bg-0); }
+.koda-os-root::-webkit-scrollbar-thumb:hover,
+.koda-os-root *::-webkit-scrollbar-thumb:hover { background: var(--fg-4); }
+
+/* Utility classes */
+.koda-os-root .mono { font-family: var(--font-mono); font-feature-settings: 'zero', 'ss01'; }
+.koda-os-root .tnum { font-variant-numeric: tabular-nums; }
+.koda-os-root .upper { text-transform: uppercase; letter-spacing: 0.08em; }
+
+.koda-os-root .kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--fg-2);
+}
+
+.koda-os-root .grad-blue-red {
+  background: linear-gradient(105deg, var(--blue) 0%, var(--blue-hi) 35%, var(--red-hi) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.koda-os-root .dot-grid {
+  background-image: radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+.koda-os-root .focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--blue);
+}
+
+@keyframes koda-breath {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+.koda-os-root .breath { animation: koda-breath 1.6s var(--ease-in-out) infinite; }
+
+@keyframes koda-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 var(--blue-ring); }
+  100% { box-shadow: 0 0 0 12px transparent; }
+}
+.koda-os-root .pulse-ring { animation: koda-pulse-ring 1.6s var(--ease-out) infinite; }
+
+@keyframes koda-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.koda-os-root .skeleton {
+  background: linear-gradient(110deg, var(--bg-2) 8%, var(--bg-3) 18%, var(--bg-2) 33%);
+  background-size: 200% 100%;
+  animation: koda-shimmer 1.4s linear infinite;
+}
+
+@keyframes koda-slide-in-right {
+  from { transform: translateX(16px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.koda-os-root .anim-in-right { animation: koda-slide-in-right 320ms var(--ease-out); }
+
+@keyframes koda-fade-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.koda-os-root .anim-fade-up { animation: koda-fade-up 360ms var(--ease-out) both; }
+
+.koda-os-root .lift { transition: transform var(--t-med) var(--ease-out), box-shadow var(--t-med) var(--ease-out), border-color var(--t-med); }
+.koda-os-root .lift:hover { transform: translateY(-2px); }
+
+@keyframes koda-spin { to { transform: rotate(360deg); } }
+@keyframes koda-slide {
+  0% { background-position: -40% 0; }
+  100% { background-position: 140% 0; }
+}

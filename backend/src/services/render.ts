@@ -204,9 +204,16 @@ function remapCaptions(
   resolved: ResolvedClip[]
 ): TimelineCaption[] {
   const out: TimelineCaption[] = [];
+  const sceneMatchedIds = new Set<string>();
+
+  // 1) Captions auto-generadas por escena (id === `caption-<sceneNumber>`).
+  //    Se reubican según el nuevo orden post edit-plan.
   for (const { clip, newStartFrame } of resolved) {
-    const orig = timeline.captions.find((c) => c.id === `caption-${clip.sceneNumber}`);
+    const orig = timeline.captions.find(
+      (c) => c.id === `caption-${clip.sceneNumber}`
+    );
     if (!orig) continue;
+    sceneMatchedIds.add(orig.id);
     const offset = newStartFrame - orig.startFrame;
     out.push({
       ...orig,
@@ -219,6 +226,15 @@ function remapCaptions(
       })),
     });
   }
+
+  // 2) Captions agregadas manualmente por el usuario (fase Subtítulos).
+  //    Ya están en tiempo absoluto del video final — pasan tal cual.
+  for (const cap of timeline.captions) {
+    if (!sceneMatchedIds.has(cap.id)) {
+      out.push(cap);
+    }
+  }
+
   return out;
 }
 
@@ -240,11 +256,65 @@ function escapeAssText(text: string): string {
     .trim();
 }
 
+/**
+ * Catálogo de estilos de subtítulos disponibles. Cada entrada es una línea
+ * "Style:" en formato ASS v4+. El id se referencia desde caption.style.
+ *
+ * Format de columnas:
+ *   Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
+ *   BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing,
+ *   Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR,
+ *   MarginV, Encoding
+ *
+ * Colores ASS van como &H<AABBGGRR>; el AA es el alpha invertido (00 = opaco).
+ */
+const SUBTITLE_STYLES: Record<string, string> = {
+  // Blanco grande con borde negro — caption clásico
+  default:
+    'Default,Arial Black,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,80,80,260,1',
+  // Amarillo TikTok — fondo negro semi
+  'tiktok-yellow':
+    'TikTokYellow,Arial Black,84,&H0000F4FF,&H000000FF,&H00000000,&HA0000000,1,0,0,0,100,100,0,0,1,4,2,2,60,60,300,1',
+  // Verde Hormozi — borde negro grueso, todo mayúsculas
+  'hormozi-green':
+    'HormoziGreen,Impact,90,&H0042F557,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,7,0,2,60,60,320,1',
+  // MrBeast — blanco gigante con borde negro extra grueso
+  'mrbeast-white':
+    'MrBeast,Impact,96,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,8,2,2,60,60,340,1',
+  // Minimal — blanco con sombra sutil, posición arriba
+  minimal:
+    'Minimal,Helvetica,52,&H00FFFFFF,&H000000FF,&H00000000,&H40000000,0,0,0,0,100,100,0,0,1,2,2,8,80,80,80,1',
+  // Highlight — bloque amarillo con texto negro
+  highlight:
+    'Highlight,Arial Black,68,&H00000000,&H000000FF,&H0000F4FF,&HC000F4FF,1,0,0,0,100,100,0,0,3,0,0,2,80,80,280,1',
+  // Karaoke style — cyan con borde
+  karaoke:
+    'Karaoke,Arial Black,72,&H00FFE100,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,80,80,260,1',
+};
+
+const DEFAULT_STYLE_NAME = 'Default';
+
+function resolveStyleName(styleId: string | undefined): string {
+  if (!styleId) return DEFAULT_STYLE_NAME;
+  if (!SUBTITLE_STYLES[styleId]) return DEFAULT_STYLE_NAME;
+  // El "Name" del style ASS es lo que está antes de la primera coma.
+  return SUBTITLE_STYLES[styleId].split(',', 1)[0];
+}
+
 function buildAssFile(
   captions: TimelineCaption[],
   timeline: TimelineDocument,
   target: CacheTarget
 ): string {
+  // Solo emitimos los styles que realmente se usan, más Default como fallback.
+  const usedIds = new Set<string>(['default']);
+  for (const cap of captions) {
+    if (cap.style && SUBTITLE_STYLES[cap.style]) usedIds.add(cap.style);
+  }
+  const styleLines = Array.from(usedIds)
+    .map((id) => `Style: ${SUBTITLE_STYLES[id]}`)
+    .join('\n');
+
   const header =
     `[Script Info]\n` +
     `Title: Tim Koda Captions\n` +
@@ -256,7 +326,7 @@ function buildAssFile(
     `YCbCr Matrix: TV.709\n\n` +
     `[V4+ Styles]\n` +
     `Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n` +
-    `Style: Default,Arial Black,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,5,1,2,80,80,260,1\n\n` +
+    `${styleLines}\n\n` +
     `[Events]\n` +
     `Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
   const lines: string[] = [];
@@ -265,7 +335,8 @@ function buildAssFile(
     const end = framesToAssTime(cap.endFrame, timeline.fps);
     const text = escapeAssText(cap.text);
     if (!text) continue;
-    lines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`);
+    const styleName = resolveStyleName(cap.style);
+    lines.push(`Dialogue: 0,${start},${end},${styleName},,0,0,0,,${text}`);
   }
   return header + lines.join('\n') + '\n';
 }

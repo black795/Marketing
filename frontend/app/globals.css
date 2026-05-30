@@ -1,3 +1,5 @@
+@import './tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +10,6 @@
 }
 
 body {
-  background-color: #ffffff;
-  color: #111111;
+  background-color: var(--bg-0);
+  color: var(--fg-1);
 }

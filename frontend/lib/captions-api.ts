@@ -169,6 +169,36 @@ export async function buildTimeline(
   return body.timeline;
 }
 
+// ---- Captions editables (fase de subtítulos) ------------------------------
+
+export interface CaptionInput {
+  id?: string;
+  text: string;
+  startSeconds: number;
+  durationSeconds: number;
+  style?: string;
+}
+
+/**
+ * Reemplaza el array `captions` del timeline existente (no toca clips/audio).
+ * El backend convierte los segundos a frames según el fps actual.
+ */
+export async function saveTimelineCaptions(
+  projectId: string,
+  captions: CaptionInput[]
+): Promise<TimelineDocument> {
+  const res = await fetch(
+    `${BACKEND_URL}/api/timeline/${encodeURIComponent(projectId)}/captions`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ captions }),
+    }
+  );
+  const body = await jsonOrThrow<{ timeline: TimelineDocument }>(res);
+  return body.timeline;
+}
+
 // ---- Captions Editor (fase 2) ---------------------------------------------
 
 /** Lista las plantillas de estilo del proveedor de captions activo. */

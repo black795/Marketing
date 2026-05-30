@@ -16,6 +16,7 @@ import editPlanRouter from './routes/edit-plan';
 import renderRouter from './routes/render';
 import editingProjectRouter from './routes/editing-project';
 import sandboxRouter from './routes/sandbox';
+import autoRouter from './routes/auto';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
 import { createLogger, newId } from './services/logger';
 import { metrics, recordStatus, snapshotMetrics } from './services/metrics';
@@ -24,9 +25,14 @@ import { assertEnvOrReport } from './services/env';
 const log = createLogger('backend');
 const app = express();
 
+// CORS: cualquier localhost / 127.0.0.1 en dev (Next a veces se cae a :3001
+// si :3000 esta tomado). En prod, override via CORS_ORIGIN si hace falta.
+const corsOriginEnv = process.env.CORS_ORIGIN;
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: corsOriginEnv
+      ? corsOriginEnv.split(',').map((s) => s.trim())
+      : /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
   })
 );
 
@@ -145,6 +151,7 @@ app.use('/api', editPlanRouter);
 app.use('/api', renderRouter);
 app.use('/api', editingProjectRouter);
 app.use('/api', sandboxRouter);
+app.use('/api', autoRouter);
 
 // 404 — ninguna ruta coincidió.
 app.use((req, res) => {

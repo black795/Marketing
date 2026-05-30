@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadClip } from '@/lib/clips-api';
 import { buildTimeline } from '@/lib/captions-api';
@@ -13,24 +13,80 @@ export default function ManualProjectPage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blobUrlsRef = useRef<Map<File, string>>(new Map());
+
+  const getUrl = (file: File): string => {
+    let url = blobUrlsRef.current.get(file);
+    if (!url) {
+      url = URL.createObjectURL(file);
+      blobUrlsRef.current.set(file, url);
+    }
+    return url;
+  };
+
+  // libera blobs cuando se quita un archivo
+  useEffect(() => {
+    const current = new Set(files);
+    for (const [file, url] of blobUrlsRef.current.entries()) {
+      if (!current.has(file)) {
+        URL.revokeObjectURL(url);
+        blobUrlsRef.current.delete(file);
+      }
+    }
+  }, [files]);
+
+  // libera todo al desmontar
+  useEffect(() => {
+    const map = blobUrlsRef.current;
+    return () => {
+      map.forEach((url) => URL.revokeObjectURL(url));
+      map.clear();
+    };
+  }, []);
+
+  const previews = useMemo(
+    () => files.map((file) => ({ file, url: getUrl(file) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [files],
+  );
+
+  const addFiles = (incoming: FileList | File[]) => {
+    const arr = Array.from(incoming).filter(
+      (f) => f.type.startsWith('video/') || f.type.startsWith('image/'),
+    );
+    if (arr.length === 0) return;
+    setFiles((prev) => [...prev, ...arr]);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(e.target.files);
     }
+    // permitir re-seleccionar el mismo archivo despues
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.dataTransfer.files) {
-      setFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(e.dataTransfer.files);
     }
   };
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const moveFile = (index: number, dir: -1 | 1) => {
+    setFiles((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   };
 
   const handleStartProject = async () => {
@@ -130,30 +186,95 @@ export default function ManualProjectPage() {
 
           {files.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-neutral-900">Archivos seleccionados ({files.length})</h3>
-              <ul className="max-h-64 space-y-2 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-2">
-                {files.map((file, i) => (
-                  <li key={i} className="flex items-center justify-between rounded bg-white p-2 text-sm shadow-sm">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <span className="text-xl" aria-hidden>
-                        {file.type.startsWith('image/') ? '🖼️' : '🎞️'}
-                      </span>
-                      <span className="truncate font-medium text-neutral-700">{file.name}</span>
-                      <span className="text-xs text-neutral-400">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </span>
-                    </div>
-                    {!uploading && (
-                      <button
-                        onClick={() => removeFile(i)}
-                        className="p-1 text-neutral-400 hover:text-red-500"
-                        title="Eliminar"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </li>
-                ))}
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-neutral-900">
+                  Archivos seleccionados ({files.length})
+                </h3>
+                {!uploading && (
+                  <button
+                    onClick={() => setFiles([])}
+                    className="text-xs font-semibold text-neutral-500 hover:text-red-500"
+                  >
+                    Vaciar todo
+                  </button>
+                )}
+              </div>
+              <ul className="grid max-h-[28rem] grid-cols-2 gap-3 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 md:grid-cols-3">
+                {previews.map(({ file, url }, i) => {
+                  const isImage = file.type.startsWith('image/');
+                  return (
+                    <li
+                      key={`${file.name}-${i}`}
+                      className="group relative flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
+                    >
+                      <div className="relative aspect-video w-full bg-black">
+                        {isImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={url}
+                            alt={file.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={url}
+                            controls
+                            muted
+                            playsInline
+                            preload="auto"
+                            onLoadedMetadata={(e) => {
+                              const v = e.currentTarget;
+                              try {
+                                v.currentTime = Math.min(0.1, (v.duration || 1) / 2);
+                              } catch {}
+                            }}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                        <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          {isImage ? 'IMG' : 'VIDEO'} · {i + 1}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-neutral-700" title={file.name}>
+                            {file.name}
+                          </p>
+                          <p className="text-[10px] text-neutral-400">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        {!uploading && (
+                          <div className="flex shrink-0 items-center gap-0.5">
+                            <button
+                              onClick={() => moveFile(i, -1)}
+                              disabled={i === 0}
+                              className="p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-30"
+                              title="Mover arriba"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => moveFile(i, 1)}
+                              disabled={i === files.length - 1}
+                              className="p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-30"
+                              title="Mover abajo"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              onClick={() => removeFile(i)}
+                              className="p-1 text-neutral-400 hover:text-red-500"
+                              title="Eliminar"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

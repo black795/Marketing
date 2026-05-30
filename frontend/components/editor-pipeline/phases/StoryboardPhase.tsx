@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import StoryboardLoader from '@/app/storyboard/StoryboardLoader';
 
 /**
- * Fase 3 — Storyboard. Embebe el StoryboardLoader existente (mismo componente
+ * Fase 2 — Storyboard. Embebe el StoryboardLoader existente (mismo componente
  * que sirve a /storyboard). La fase se marca como "tocada" en el primer mount.
  */
 export default function StoryboardPhase({

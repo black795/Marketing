@@ -178,18 +178,29 @@ export async function streamGenerateImagesFromScript(
   callbacks: ImageStreamCallbacks,
   signal: AbortSignal
 ): Promise<ImageStreamResult> {
-  const response = await fetch(
-    `${BACKEND_URL}/api/generate-images-from-script?stream=1`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify(payload),
-      signal,
+  if (signal.aborted) {
+    throw new StreamCancelledError();
+  }
+  let response: Response;
+  try {
+    response = await fetch(
+      `${BACKEND_URL}/api/generate-images-from-script?stream=1`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(payload),
+        signal,
+      }
+    );
+  } catch (err) {
+    if ((err as any)?.name === 'AbortError') {
+      throw new StreamCancelledError();
     }
-  );
+    throw err;
+  }
 
   if (!response.ok || !response.body) {
     throw new Error(`Backend responded with status ${response.status}`);
@@ -490,18 +501,29 @@ export async function streamGenerateVideosFromScenes(
   callbacks: VideoStreamCallbacks,
   signal: AbortSignal
 ): Promise<VideoStreamResult> {
-  const response = await fetch(
-    `${BACKEND_URL}/api/generate-videos-from-scenes?stream=1`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify(payload),
-      signal,
+  if (signal.aborted) {
+    throw new StreamCancelledError();
+  }
+  let response: Response;
+  try {
+    response = await fetch(
+      `${BACKEND_URL}/api/generate-videos-from-scenes?stream=1`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(payload),
+        signal,
+      }
+    );
+  } catch (err) {
+    if ((err as any)?.name === 'AbortError') {
+      throw new StreamCancelledError();
     }
-  );
+    throw err;
+  }
 
   if (!response.ok || !response.body) {
     throw new Error(`Backend responded with status ${response.status}`);

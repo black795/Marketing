@@ -42,6 +42,12 @@ export interface GenerateImagesFromScriptResponse {
   scenes: Scene[];
 }
 
+/** Bloque narrativo del skill /script (5 bloques). */
+export type ScriptBlock = 'hook' | 'pre-cta' | 'walkthrough' | 'transition' | 'cta';
+
+/** Tipo de shot del skill /storyboard (shot deck). */
+export type ShotType = 'AI' | 'SCREEN_REC' | 'TEXT' | 'VIDEO';
+
 export interface Scene {
   scene_number: number;
   scene_title: string;
@@ -54,6 +60,12 @@ export interface Scene {
   image_url?: string | null;
   image_error?: string;
   imported_video_url?: string | null;
+  /** A qué bloque del guion sirve esta escena (HOOK/PRE-CTA/...). */
+  block?: ScriptBlock;
+  /** Tipo de shot del storyboard. AI por default si no se especifica. */
+  shot_type?: ShotType;
+  /** Caption sugerido para esta escena (3-5 palabras, en idioma del usuario). */
+  text_overlay?: string;
 }
 
 export interface Character {

@@ -13,16 +13,7 @@
  */
 
 /** Cada paso del wizard, en el orden visible. */
-export const PHASES = [
-  'setup',
-  'import',
-  'storyboard',
-  'timeline',
-  'style',
-  'captions',
-  'ai-assistant',
-  'export',
-] as const;
+export const PHASES = ['auto', 'import', 'storyboard', 'assemble', 'subtitles'] as const;
 
 export type Phase = (typeof PHASES)[number];
 
@@ -118,18 +109,15 @@ export const DEFAULT_IMPORTS: PipelineImports = {
 };
 
 export const DEFAULT_PHASE_STATUS: Record<Phase, PhaseStatus> = {
-  setup: 'pending',
+  auto: 'pending',
   import: 'pending',
   storyboard: 'pending',
-  timeline: 'pending',
-  style: 'pending',
-  captions: 'pending',
-  'ai-assistant': 'skipped', // Ola 3 — habilitado pero opcional.
-  export: 'pending',
+  assemble: 'pending',
+  subtitles: 'pending',
 };
 
 export const DEFAULT_PIPELINE: PipelineState = {
-  currentPhase: 'setup',
+  currentPhase: 'auto',
   status: DEFAULT_PHASE_STATUS,
   setup: DEFAULT_SETUP,
   imports: DEFAULT_IMPORTS,
@@ -137,26 +125,20 @@ export const DEFAULT_PIPELINE: PipelineState = {
 
 /** Etiqueta visible de cada fase — usada por PipelineStepper. */
 export const PHASE_LABEL: Record<Phase, string> = {
-  setup: '1 · Setup',
-  import: '2 · Importar',
-  storyboard: '3 · Storyboard',
-  timeline: '4 · Timeline',
-  style: '5 · Estilo',
-  captions: '6 · Captions',
-  'ai-assistant': '7 · IA',
-  export: '8 · Exportar',
+  auto: '0 · Auto (IA)',
+  import: '1 · Importar',
+  storyboard: '2 · Storyboard',
+  assemble: '3 · Junte de clips',
+  subtitles: '4 · Subtítulos',
 };
 
 /** Subtítulo descriptivo opcional para el header de cada fase. */
 export const PHASE_HINT: Record<Phase, string> = {
-  setup: 'Define nombre, tipo, formato y duración del proyecto.',
-  import: 'Trae los materiales del proyecto: guion, escenas, imágenes, video, audio.',
+  auto: 'Describí qué video querés en una frase. La IA arma el junte y los subtítulos.',
+  import: 'Galería de los archivos importados: videos, imágenes y audio.',
   storyboard: 'Dirige las escenas: prompts, regen IA, drag & drop, versionado.',
-  timeline: 'Editor pro: pistas separadas, trim, split, snap y scrub.',
-  style: 'Aplica un StylePack viral (TikTok, Hormozi, Documental, …).',
-  captions: 'Subtítulos sincronizados con estilos virales.',
-  'ai-assistant': 'Sugiere transiciones, detecta cortes y rompimientos de continuidad. (Próximamente)',
-  export: 'Render incremental y export por plataforma.',
+  assemble: 'Especifica el orden y junta los clips con Remotion.',
+  subtitles: 'Agrega texto y duración por subtítulo, elegí un estilo y renderizá.',
 };
 
 export function nextPhase(p: Phase): Phase | null {
@@ -171,7 +153,7 @@ export function prevPhase(p: Phase): Phase | null {
   return PHASES[idx - 1];
 }
 
-/** Mínimo para considerar válido el setup y poder avanzar de fase 1. */
+/** Mínimo para considerar válido el setup. Se mantiene exportado por compat. */
 export function isSetupValid(s: PipelineSetup): boolean {
   return (
     s.name.trim().length > 0 &&

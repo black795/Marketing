@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useCallback, useMemo } from 'react';
 import {
-  isSetupValid,
   nextPhase,
   PHASE_HINT,
   PHASE_LABEL,
@@ -13,23 +12,18 @@ import {
 import { usePipelineProject } from '@/lib/editor-pipeline/usePipelineProject';
 import PipelineStepper from './PipelineStepper';
 import PipelineFooter from './PipelineFooter';
-import SetupPhase from './phases/SetupPhase';
+import AutoPhase from './phases/AutoPhase';
 import ImportPhase from './phases/ImportPhase';
 import StoryboardPhase from './phases/StoryboardPhase';
-import TimelinePhase from './phases/TimelinePhase';
-import StylePhase from './phases/StylePhase';
-import CaptionsPhase from './phases/CaptionsPhase';
-import AiAssistantPhase from './phases/AiAssistantPhase';
-import ExportPhase from './phases/ExportPhase';
+import AssemblePhase from './phases/AssemblePhase';
+import SubtitlesPhase from './phases/SubtitlesPhase';
 
 /**
- * Shell del pipeline secuencial — reemplaza el grid de 6 cards anterior.
+ * Shell del pipeline secuencial. Reducido a dos pasos:
+ *   1. Import (galería de archivos)
+ *   2. Storyboard
  *
- * Mantiene la máquina de estados (currentPhase), persiste a backend vía
- * usePipelineProject (autosave debounced) y renderiza la fase activa.
- *
- * Si no hay projectId, mostramos un empty state que invita a entrar desde
- * /scripts o /avatar — el editor standalone llega en Ola 2.
+ * Si no hay projectId, mostramos un empty state.
  */
 export default function PipelineShell({ projectId }: { projectId: string | null }) {
   if (!projectId) return <NoProjectEmptyState />;
@@ -44,16 +38,12 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
   } = usePipelineProject(projectId);
 
   const current = state.currentPhase;
-  const setupValid = useMemo(() => isSetupValid(state.setup), [state.setup]);
 
-  // Por fase: ¿está el usuario habilitado para avanzar al siguiente paso?
+  // Cada paso es una herramienta — basta con visitarla para avanzar.
   const canContinue = useMemo(() => {
-    if (current === 'setup') return setupValid;
-    // Las fases siguientes son herramientas — basta con visitarlas. Si el
-    // status ya está visited/completed/skipped, podemos avanzar.
     const st = state.status[current];
     return st === 'visited' || st === 'completed' || st === 'skipped';
-  }, [current, setupValid, state.status]);
+  }, [current, state.status]);
 
   const onBack = useCallback(() => {
     const prev = prevPhase(current);
@@ -66,16 +56,6 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
     markCompleted(current);
     goToPhase(next);
   }, [current, goToPhase, markCompleted]);
-
-  const onSkip = useCallback(() => {
-    const next = nextPhase(current);
-    if (!next) return;
-    setState((prev) => ({
-      ...prev,
-      status: { ...prev.status, [current]: 'skipped' },
-    }));
-    goToPhase(next);
-  }, [current, goToPhase, setState]);
 
   return (
     <main className="min-h-screen bg-neutral-50 pb-24">
@@ -99,7 +79,6 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
             <PipelineStepper
               current={current}
               status={state.status}
-              setupValid={setupValid}
               onJump={goToPhase}
             />
           </div>
@@ -122,7 +101,6 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
         <PhaseContent
           phase={current}
           projectId={projectId}
-          state={state}
           setState={setState}
         />
       </div>
@@ -135,7 +113,6 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
         saveStatus={saveStatus}
         onBack={onBack}
         onContinue={onContinue}
-        onSkip={current === 'ai-assistant' ? onSkip : undefined}
       />
     </main>
   );
@@ -144,28 +121,30 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
 function PhaseContent({
   phase,
   projectId,
-  state,
   setState,
 }: {
   phase: Phase;
   projectId: string;
-  state: ReturnType<typeof usePipelineProject>['state'];
   setState: ReturnType<typeof usePipelineProject>['setState'];
 }) {
   switch (phase) {
-    case 'setup':
+    case 'auto':
       return (
-        <SetupPhase
-          value={state.setup}
-          onChange={(setup) => setState((prev) => ({ ...prev, setup }))}
+        <AutoPhase
+          projectId={projectId}
+          onTouched={() =>
+            setState((prev) =>
+              prev.status.auto === 'pending'
+                ? { ...prev, status: { ...prev.status, auto: 'visited' } }
+                : prev
+            )
+          }
         />
       );
     case 'import':
       return (
         <ImportPhase
           projectId={projectId}
-          value={state.imports}
-          onChange={(imports) => setState((prev) => ({ ...prev, imports }))}
           onTouched={() =>
             setState((prev) =>
               prev.status.import === 'pending'
@@ -188,55 +167,27 @@ function PhaseContent({
           }
         />
       );
-    case 'timeline':
+    case 'assemble':
       return (
-        <TimelinePhase
+        <AssemblePhase
           projectId={projectId}
           onTouched={() =>
             setState((prev) =>
-              prev.status.timeline === 'pending'
-                ? { ...prev, status: { ...prev.status, timeline: 'visited' } }
+              prev.status.assemble === 'pending'
+                ? { ...prev, status: { ...prev.status, assemble: 'visited' } }
                 : prev
             )
           }
         />
       );
-    case 'style':
+    case 'subtitles':
       return (
-        <StylePhase
+        <SubtitlesPhase
           projectId={projectId}
           onTouched={() =>
             setState((prev) =>
-              prev.status.style === 'pending'
-                ? { ...prev, status: { ...prev.status, style: 'visited' } }
-                : prev
-            )
-          }
-        />
-      );
-    case 'captions':
-      return (
-        <CaptionsPhase
-          projectId={projectId}
-          onTouched={() =>
-            setState((prev) =>
-              prev.status.captions === 'pending'
-                ? { ...prev, status: { ...prev.status, captions: 'visited' } }
-                : prev
-            )
-          }
-        />
-      );
-    case 'ai-assistant':
-      return <AiAssistantPhase />;
-    case 'export':
-      return (
-        <ExportPhase
-          projectId={projectId}
-          onTouched={() =>
-            setState((prev) =>
-              prev.status.export === 'pending'
-                ? { ...prev, status: { ...prev.status, export: 'visited' } }
+              prev.status.subtitles === 'pending'
+                ? { ...prev, status: { ...prev.status, subtitles: 'visited' } }
                 : prev
             )
           }
@@ -256,9 +207,8 @@ function NoProjectEmptyState() {
           El editor necesita un proyecto
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Crea contenido desde <strong>Scripts</strong> o <strong>Avatar</strong> y
-          continúa al editor con un click. El pipeline se inicializa con los
-          assets ya generados.
+          Crea contenido desde <strong>Scripts</strong>, <strong>Avatar</strong> o
+          subí tus propios clips desde <strong>Edición</strong>.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
@@ -279,13 +229,6 @@ function NoProjectEmptyState() {
           >
             📎 Edición desde Clips
           </Link>
-        </div>
-        <div className="mt-6 text-[11px] text-neutral-400">
-          Puedes seguir abriendo las herramientas individuales:{' '}
-          <Link href="/storyboard" className="hover:text-brand-pink">storyboard</Link>,{' '}
-          <Link href="/timeline" className="hover:text-brand-pink">timeline</Link>,{' '}
-          <Link href="/styles" className="hover:text-brand-pink">styles</Link>,{' '}
-          <Link href="/export" className="hover:text-brand-pink">export</Link>.
         </div>
       </div>
     </main>

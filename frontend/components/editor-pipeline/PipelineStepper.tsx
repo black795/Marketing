@@ -10,33 +10,20 @@ import {
 interface Props {
   current: Phase;
   status: Record<Phase, PhaseStatus>;
-  /** Si el setup todavía no es válido, los pasos posteriores quedan bloqueados. */
-  setupValid: boolean;
   onJump: (p: Phase) => void;
 }
 
 /**
- * Barra de pasos del pipeline. Inspirada en el `PhaseStepper` de
- * `/scripts/page.tsx` pero permite saltar a pasos ya visitados (los demás
- * quedan deshabilitados hasta que se complete el setup).
+ * Barra de pasos del pipeline. Cualquier paso es saltable — el orden es solo
+ * sugerencia.
  */
-export default function PipelineStepper({
-  current,
-  status,
-  setupValid,
-  onJump,
-}: Props) {
+export default function PipelineStepper({ current, status, onJump }: Props) {
   return (
     <ol className="flex flex-wrap items-center gap-1.5 text-xs">
       {PHASES.map((p, idx) => {
         const isActive = p === current;
         const st = status[p];
-        // Saltable si ya se visitó/completó, o si es setup (siempre).
-        const canJump =
-          p === 'setup' ||
-          st === 'visited' ||
-          st === 'completed' ||
-          (setupValid && idx <= PHASES.indexOf(current));
+        const canJump = true;
         const isLast = idx === PHASES.length - 1;
         return (
           <li key={p} className="flex items-center gap-1.5">
