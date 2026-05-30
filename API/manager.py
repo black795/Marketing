@@ -59,6 +59,7 @@ from API import gpt_image_2  # noqa: F401, E402
 from API import kling_v3_omni  # noqa: F401, E402
 from API import kling_v3  # noqa: F401, E402
 from API import p_video_avatar  # noqa: F401, E402
+from API import omni_human  # noqa: F401, E402
 
 
 if __name__ == "__main__":

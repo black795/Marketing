@@ -1,12 +1,23 @@
 'use client';
 
-import React, { useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import React, { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '../icons';
 import { Badge, Button, Card, Kbd, SectionHeader } from '../primitives';
 import { MODEL_OPTIONS } from '../mock-data';
 import { projectStore, useProject } from '../project-store';
 import { MentionTextarea } from '../MentionTextarea';
+import SaveAsAvatarInline from '@/components/avatar/SaveAsAvatarInline';
+import AvatarPicker from '@/components/avatar/AvatarPicker';
+import { toAbsoluteAsset, fetchRegistry } from '@/lib/avatar-registry';
+import type { Avatar } from '@/types/avatar-registry';
+import {
+  fetchProfiles,
+  buildProfileContext,
+  markProfileUsed,
+  addProfileExample,
+} from '@/lib/profiles';
+import type { Profile } from '@/types/profile';
 import { generateScript } from '@/lib/api';
 import {
   SCENE_COUNT_OPTIONS,
@@ -79,6 +90,34 @@ async function addRefFiles(files: FileList | null) {
   }
 }
 
+async function urlToDataUrl(url: string): Promise<string> {
+  const resp = await fetch(url);
+  const blob = await resp.blob();
+  return await new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = () => reject(new Error('No se pudo leer la imagen del avatar'));
+    r.readAsDataURL(blob);
+  });
+}
+
+/** Carga las imágenes de un avatar guardado como referencias del prompt. */
+async function loadAvatarRefs(avatar: Avatar) {
+  const urls = [avatar.identity.primaryImageUrl, ...avatar.identity.referenceImages];
+  const remaining = REF_MAX - projectStore.get().form.references.length;
+  for (const u of urls.slice(0, Math.max(0, remaining))) {
+    try {
+      const dataUrl = await urlToDataUrl(toAbsoluteAsset(u));
+      const id = `ref-av-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
+      projectStore.setForm({
+        references: [...projectStore.get().form.references, { id, dataUrl, name: avatar.name }],
+      });
+    } catch (err) {
+      console.warn('[koda-os] no se pudo cargar referencia del avatar', err);
+    }
+  }
+}
+
 const chipBtn: CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -101,8 +140,57 @@ export default function PromptScreen() {
   const { form } = useProject();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(
+    () => projectStore.get().profileId ?? '',
+  );
+  const [avatars, setAvatars] = useState<Avatar[]>([]);
+  const [exampleSaved, setExampleSaved] = useState(false);
+  const [avatarsLoaded, setAvatarsLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const openFilePicker = () => fileInputRef.current?.click();
+
+  useEffect(() => {
+    fetchProfiles()
+      .then((reg) => setProfiles(reg.profiles))
+      .catch(() => {});
+    fetchRegistry()
+      .then((reg) => setAvatars(reg.avatars))
+      .catch(() => {});
+  }, []);
+
+  const selectedProfile = profiles.find((p) => p.id === selectedProfileId) ?? null;
+
+  function selectProfile(id: string) {
+    setSelectedProfileId(id);
+    projectStore.setProfileId(id || null);
+    setAvatarsLoaded(false);
+  }
+
+  /** Carga las imágenes de los avatares vinculados al perfil como referencias. */
+  async function loadProfileAvatars() {
+    if (!selectedProfile) return;
+    const linked = selectedProfile.avatarIds
+      .map((id) => avatars.find((a) => a.id === id))
+      .filter((a): a is Avatar => Boolean(a));
+    for (const a of linked) {
+      await loadAvatarRefs(a);
+    }
+    setAvatarsLoaded(true);
+  }
+
+  async function saveCurrentAsExample() {
+    if (!selectedProfile) return;
+    const text = [form.visualPrompt, form.narrativePrompt].filter((s) => s.trim()).join('\n\n').trim();
+    if (!text) return;
+    try {
+      await addProfileExample(selectedProfile.id, 'prompt', text);
+      setExampleSaved(true);
+      setTimeout(() => setExampleSaved(false), 1500);
+    } catch {
+      /* no bloquea */
+    }
+  }
 
   async function onGenerate() {
     if (generating) return;
@@ -121,7 +209,9 @@ export default function PromptScreen() {
         model: form.model,
         referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
         sceneCount: form.settings.sceneCount,
+        profileContext: selectedProfile ? buildProfileContext(selectedProfile) : undefined,
       });
+      if (selectedProfile) markProfileUsed(selectedProfile.id).catch(() => {});
       projectStore.setScript(script);
       router.push('/scripts/review');
     } catch (err) {
@@ -194,6 +284,8 @@ export default function PromptScreen() {
             />
           </Card>
 
+          <AvatarPicker onPick={loadAvatarRefs} />
+
           <Card padding={24}>
             <ReferenceUploader />
           </Card>
@@ -221,6 +313,98 @@ export default function PromptScreen() {
             alignSelf: 'flex-start',
           }}
         >
+          <Card padding={20}>
+            <div className="mono upper" style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 12 }}>
+              Perfil / dominio
+            </div>
+            <select
+              value={selectedProfileId}
+              onChange={(e) => selectProfile(e.target.value)}
+              style={{
+                width: '100%',
+                height: 36,
+                padding: '0 10px',
+                background: 'var(--bg-1)',
+                border: '1px solid var(--line)',
+                borderRadius: 8,
+                color: 'var(--fg-1)',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">Sin perfil (genérico)</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.domain ? ` · ${p.domain}` : ''}
+                </option>
+              ))}
+            </select>
+            {selectedProfile && (
+              <>
+                <p style={{ fontSize: 11, color: 'var(--fg-3)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                  El guion se enfocará en <strong style={{ color: 'var(--fg-2)' }}>{selectedProfile.name}</strong>
+                  {selectedProfile.examples.length > 0 && ` · ${selectedProfile.examples.length} ejemplos`}.
+                </p>
+                <button
+                  type="button"
+                  onClick={saveCurrentAsExample}
+                  disabled={!form.visualPrompt.trim()}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    height: 30,
+                    borderRadius: 7,
+                    background: exampleSaved ? 'var(--blue-soft)' : 'var(--bg-3)',
+                    border: '1px solid var(--line)',
+                    color: exampleSaved ? 'var(--blue-hi)' : 'var(--fg-2)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: form.visualPrompt.trim() ? 'pointer' : 'not-allowed',
+                    fontFamily: 'var(--font-mono)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                  title="Guardar este prompt como ejemplo del perfil (few-shot)"
+                >
+                  <Icon.Save size={12} /> {exampleSaved ? 'Guardado en el perfil' : 'Guardar prompt en el perfil'}
+                </button>
+                {selectedProfile.avatarIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={loadProfileAvatars}
+                    disabled={avatarsLoaded}
+                    style={{
+                      marginTop: 8,
+                      width: '100%',
+                      height: 30,
+                      borderRadius: 7,
+                      background: avatarsLoaded ? 'var(--blue-soft)' : 'var(--bg-3)',
+                      border: '1px solid var(--line)',
+                      color: avatarsLoaded ? 'var(--blue-hi)' : 'var(--fg-2)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: avatarsLoaded ? 'default' : 'pointer',
+                      fontFamily: 'var(--font-mono)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                    title="Carga las imágenes de los avatares del perfil como referencias del personaje"
+                  >
+                    <Icon.Star size={12} />{' '}
+                    {avatarsLoaded
+                      ? 'Avatares cargados'
+                      : `Cargar avatares del perfil (${selectedProfile.avatarIds.length})`}
+                  </button>
+                )}
+              </>
+            )}
+          </Card>
+
           <Card padding={20}>
             <div className="mono upper" style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 14 }}>
               Modelo
@@ -492,6 +676,15 @@ function ReferenceUploader() {
           </label>
         )}
       </div>
+
+      {refs.length > 0 && (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--line)' }}>
+          <SaveAsAvatarInline
+            images={refs.map((r) => r.dataUrl)}
+            context={[form.visualPrompt, form.narrativePrompt].filter(Boolean).join('\n\n')}
+          />
+        </div>
+      )}
     </>
   );
 }

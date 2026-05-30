@@ -10,6 +10,8 @@ interface VideoSceneInput {
   scene_number: number;
   image_url?: string | null;
   video_prompt: string;
+  /** Duración por escena en segundos (snappeada por el FE a 3/5/10). */
+  duration?: number;
 }
 
 interface VideoSceneOutput extends VideoSceneInput {
@@ -160,13 +162,17 @@ router.post('/generate-videos-from-scenes', async (req: Request, res: Response) 
         },
       });
 
+      const sceneDur =
+        typeof scene.duration === 'number' && scene.duration > 0
+          ? scene.duration
+          : dur;
       const result = await generateVideo({
         model,
         prompt: scene.video_prompt,
         imageUrl: scene.image_url ?? undefined,
         referenceImageUrls: refs.length > 0 ? refs : undefined,
         aspectRatio: aspect,
-        duration: dur,
+        duration: sceneDur,
         resolution: res_,
         sound: snd,
         abortSignal: abort.signal,
@@ -249,8 +255,12 @@ router.post('/generate-videos-from-scenes', async (req: Request, res: Response) 
   // ------------------------------------------------------------------
   const out: VideoSceneOutput[] = [];
   for (const scene of scenes) {
+    const sceneDur =
+      typeof scene.duration === 'number' && scene.duration > 0
+        ? scene.duration
+        : dur;
     console.log(
-      `[generate-videos-from-scenes] escena ${scene.scene_number}/${scenes.length} →`
+      `[generate-videos-from-scenes] escena ${scene.scene_number}/${scenes.length} (dur=${sceneDur}s) →`
     );
     const result = await generateVideo({
       model,
@@ -258,7 +268,7 @@ router.post('/generate-videos-from-scenes', async (req: Request, res: Response) 
       imageUrl: scene.image_url ?? undefined,
       referenceImageUrls: refs.length > 0 ? refs : undefined,
       aspectRatio: aspect,
-      duration: dur,
+      duration: sceneDur,
       resolution: res_,
       sound: snd,
     });

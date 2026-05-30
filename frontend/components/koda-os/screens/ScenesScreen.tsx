@@ -83,10 +83,14 @@ export default function ScenesScreen() {
   }, [script, scriptApproved]);
 
   // Cleanup any in-flight stream on unmount.
+  // StrictMode dev: el verify-unmount aborta el stream recién iniciado.
+  // Reseteamos startedRef para que el re-mount vuelva a dispararlo, sino
+  // las 6 cards quedan en pending shimmer para siempre.
   useEffect(() => {
     return () => {
       streamAbortRef.current?.abort();
       regenAbortRef.current?.abort();
+      startedRef.current = false;
     };
   }, []);
 

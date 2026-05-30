@@ -60,8 +60,17 @@ class GenerateVideoResponse(BaseModel):
 
 
 class GenerateAvatarRequest(BaseModel):
-    """Request del modelo de avatar/lipsync (prunaai/p-video-avatar)."""
+    """Request del modelo de avatar/lipsync.
 
+    `model` elige el motor:
+      - "p_video_avatar" (default): TTS integrado, acepta texto o audio.
+      - "omni_human": más realista, REQUIERE audio (no hace TTS).
+    """
+
+    model: str = Field(
+        default="p_video_avatar",
+        description='Motor de generación: "p_video_avatar" | "omni_human".',
+    )
     image: str = Field(
         ...,
         description="Retrato del avatar (data: URL o http URL). jpg/png/webp.",

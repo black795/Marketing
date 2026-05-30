@@ -14,6 +14,8 @@ import {
 } from '../primitives';
 import { projectStore, useProject } from '../project-store';
 import { generateScript } from '@/lib/api';
+import { fetchProfiles, addProfileExample, buildProfileContext } from '@/lib/profiles';
+import type { Profile } from '@/types/profile';
 import type { Scene } from '@/types/story';
 
 const chipBtn: CSSProperties = {
@@ -35,10 +37,44 @@ const chipBtn: CSSProperties = {
 
 export default function ReviewScreen() {
   const router = useRouter();
-  const { script, scriptApproved, form } = useProject();
+  const { script, scriptApproved, form, profileId } = useProject();
   const [active, setActive] = useState(0);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [scriptSaved, setScriptSaved] = useState(false);
+
+  useEffect(() => {
+    if (!profileId) {
+      setProfile(null);
+      return;
+    }
+    fetchProfiles()
+      .then((reg) => setProfile(reg.profiles.find((p) => p.id === profileId) ?? null))
+      .catch(() => setProfile(null));
+  }, [profileId]);
+
+  async function saveScriptToProfile() {
+    if (!profile || !script) return;
+    const summary = [
+      script.title ? `Título: ${script.title}` : '',
+      script.style ? `Estilo: ${script.style}` : '',
+      script.scenes
+        .map((s) => s.narration)
+        .filter(Boolean)
+        .join(' ')
+        .slice(0, 600),
+    ]
+      .filter(Boolean)
+      .join('\n');
+    try {
+      await addProfileExample(profile.id, 'script', summary);
+      setScriptSaved(true);
+      setTimeout(() => setScriptSaved(false), 1500);
+    } catch {
+      /* no bloquea el flujo */
+    }
+  }
 
   // If user lands here without a script (e.g. refresh on /scripts/review),
   // bounce them back to the prompt.
@@ -74,6 +110,7 @@ export default function ReviewScreen() {
         model: form.model,
         referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
         sceneCount: form.settings.sceneCount,
+        profileContext: profile ? buildProfileContext(profile) : undefined,
       });
       projectStore.setScript(next);
       setActive(0);
@@ -112,6 +149,17 @@ export default function ReviewScreen() {
         subtitle={script.style || form.visualPrompt.slice(0, 140)}
         actions={
           <>
+            {profile && (
+              <Button
+                variant="secondary"
+                size="md"
+                icon={Icon.Save}
+                onClick={saveScriptToProfile}
+                title={`Guardar este guion como ejemplo del perfil "${profile.name}"`}
+              >
+                {scriptSaved ? 'Guardado ✓' : `Guardar en ${profile.name}`}
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="md"

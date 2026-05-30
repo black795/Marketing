@@ -58,6 +58,8 @@ export type ProjectState = {
   videoScenes: VideoSceneOutput[] | null;
   /** Selected visual style id from /styles. */
   styleId: string | null;
+  /** Perfil/dominio seleccionado en /scripts (para sesgar guion y acumular ejemplos). */
+  profileId: string | null;
 };
 
 const DEFAULT_FORM: PromptForm = {
@@ -76,6 +78,7 @@ const DEFAULT_STATE: ProjectState = {
   sceneHistory: {},
   videoScenes: null,
   styleId: null,
+  profileId: null,
 };
 
 // ---- internal mutable singleton ----------------------------------------
@@ -280,6 +283,13 @@ export const projectStore = {
   setStyleId(styleId: string | null): void {
     hydrate();
     memoryState = { ...memoryState, styleId };
+    persist();
+    emit();
+  },
+
+  setProfileId(profileId: string | null): void {
+    hydrate();
+    memoryState = { ...memoryState, profileId };
     persist();
     emit();
   },

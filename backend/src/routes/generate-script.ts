@@ -10,6 +10,8 @@ interface GenerateScriptBody {
   /** Lista canónica de referencias. */
   referenceImages?: string[];
   sceneCount?: number;
+  /** Contexto de dominio (Perfil) ya formateado por el frontend. */
+  profileContext?: string;
 }
 
 const router = Router();
@@ -22,6 +24,7 @@ router.post('/generate-script', async (req: Request, res: Response) => {
     referenceImage,
     referenceImages,
     sceneCount,
+    profileContext,
   } = req.body as GenerateScriptBody;
 
   const refs: string[] = Array.isArray(referenceImages)
@@ -63,6 +66,10 @@ router.post('/generate-script', async (req: Request, res: Response) => {
       model,
       referenceImages: refs.length > 0 ? refs : undefined,
       sceneCount: normalizedSceneCount,
+      profileContext:
+        typeof profileContext === 'string' && profileContext.trim().length > 0
+          ? profileContext
+          : undefined,
     });
     console.log(
       `[generate-script] done projectId=${projectId} scenes=${story.scenes.length}`

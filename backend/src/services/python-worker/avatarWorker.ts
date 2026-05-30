@@ -14,6 +14,8 @@ const DEFAULT_RETRY_DELAY_MS = 12_000;
 const log = createLogger('avatarWorker');
 
 export interface GenerateAvatarInput {
+  /** Motor: "p_video_avatar" (default, TTS) | "omni_human" (realista, requiere audio). */
+  model?: string;
   /** Imagen del avatar (data: URL o http URL). Requerida. */
   image: string;
   resolution?: string;
@@ -121,6 +123,7 @@ async function attempt(input: GenerateAvatarInput): Promise<Attempt> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        model: input.model ?? 'p_video_avatar',
         image: input.image,
         resolution: input.resolution ?? '720p',
         audio: input.audio ?? null,

@@ -20,8 +20,16 @@ export type AvatarPhase =
   | 'failed'
   | 'cancelled';
 
+/** Motor de generación del avatar. */
+export type AvatarModel = 'p_video_avatar' | 'omni_human';
+
 /** Payload que el frontend manda al gateway (POST /api/generate-avatar). */
 export interface AvatarGenerationRequest {
+  /**
+   * Motor: "p_video_avatar" (default, TTS desde texto o audio) u
+   * "omni_human" (más realista, REQUIERE audio).
+   */
+  model?: AvatarModel;
   /** Imagen del avatar como data: URL. */
   image: string;
   resolution: AvatarResolution;

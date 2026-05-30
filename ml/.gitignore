@@ -1,0 +1,7 @@
+# datos y modelos: no versionar (pueden ser grandes / privados)
+data/raw/
+data/processed/
+data/models/
+*.pyc
+__pycache__/
+.pytest_cache/

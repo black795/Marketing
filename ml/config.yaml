@@ -1,0 +1,28 @@
+# Configuración del entrenamiento de estilo.
+# Sólo necesitas declarar lo que quieras cambiar respecto a los valores por
+# defecto (ver koda_style/config.py). Lo no declarado se hereda.
+
+dataset:
+  # "synthetic" = datos falsos para probar la tubería (por defecto).
+  # Cuando llegue TU dataset, ponlo en "jsonl" y apunta root al archivo.
+  adapter: synthetic
+  root: null
+  options:
+    n_projects: 60
+
+# Decisiones de edición a aprender. enabled: false para apagar una.
+heads:
+  transition_in:    { type: classification, enabled: true }
+  caption_style:    { type: classification, enabled: true }
+  animation:        { type: classification, enabled: true }
+  final_duration_s: { type: regression,     enabled: true }
+
+training:
+  val_frac: 0.2   # fracción de PROYECTOS para validación
+  seed: 7
+
+export:
+  top_k: 3        # nº de opciones sugeridas por contexto en style_profile.json
+
+paths:
+  models_dir: data/models

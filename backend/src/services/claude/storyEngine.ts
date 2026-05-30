@@ -18,6 +18,11 @@ export interface StoryEngineInput {
   referenceImages?: string[];
   /** Número exacto de escenas que debe producir Claude. */
   sceneCount?: number;
+  /**
+   * Contexto de dominio (Perfil) ya formateado por el frontend. Si viene, se
+   * inyecta al INICIO del prompt para sesgar el guion hacia ese rubro.
+   */
+  profileContext?: string;
 }
 
 let cachedClient: Replicate | null = null;
@@ -50,9 +55,16 @@ function extractMentionedSlots(...texts: Array<string | undefined>): number[] {
 }
 
 function buildUserPrompt(input: StoryEngineInput): string {
-  const parts: string[] = [
-    `Prompt visual (qué ver, estilo, sujetos, composición, ambiente):\n${input.visualPrompt}`,
-  ];
+  const parts: string[] = [];
+
+  // El contexto de dominio (Perfil) va primero: encuadra todo lo demás.
+  if (input.profileContext && input.profileContext.trim().length > 0) {
+    parts.push(input.profileContext.trim());
+  }
+
+  parts.push(
+    `Prompt visual (qué ver, estilo, sujetos, composición, ambiente):\n${input.visualPrompt}`
+  );
 
   if (input.narrativePrompt && input.narrativePrompt.trim().length > 0) {
     parts.push(

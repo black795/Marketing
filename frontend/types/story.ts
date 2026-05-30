@@ -14,6 +14,8 @@ export interface GenerateScriptRequest {
   /** Legacy: una sola ref. Aún aceptada por backend pero el FE manda plural. */
   referenceImage?: string;
   sceneCount?: number;
+  /** Contexto de dominio (Perfil) ya formateado. Sesga el guion al rubro. */
+  profileContext?: string;
 }
 
 export interface GenerateScriptResponse {
@@ -116,6 +118,8 @@ export interface VideoSceneInput {
   scene_number: number;
   image_url: string;
   video_prompt: string;
+  /** Duración por escena snappeada a la grilla de Kling (3/5/10s). */
+  duration?: number;
 }
 
 export interface VideoSceneOutput {

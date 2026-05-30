@@ -8,17 +8,22 @@ import { streamGenerateAvatar, StreamCancelledError } from '@/lib/api';
 import {
   AVATAR_DEFAULTS,
   AVATAR_LANGUAGES,
+  AVATAR_MODELS,
   AVATAR_RESOLUTIONS,
   AVATAR_VOICES,
   SCRIPT_EXAMPLES,
   validateAvatarRequest,
 } from '@/lib/avatar';
 import type {
+  AvatarModel,
   AvatarPhase,
   AvatarResolution,
   AvatarResult,
   AvatarVoiceMode,
 } from '@/types/avatar';
+import AvatarPicker from '@/components/avatar/AvatarPicker';
+import { markAvatarUsed } from '@/lib/avatar-registry';
+import type { Avatar } from '@/types/avatar-registry';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
 
@@ -53,6 +58,7 @@ export default function AvatarScreen() {
   const [candidates, setCandidates] = useState<ImageCandidate[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState<AvatarVoiceMode>('tts');
+  const [model, setModel] = useState<AvatarModel>('p_video_avatar');
   const [resolution, setResolution] = useState<AvatarResolution>('1080p');
   const [voice, setVoice] = useState(AVATAR_DEFAULTS.voice);
   const [voiceLanguage, setVoiceLanguage] = useState(AVATAR_DEFAULTS.voiceLanguage);
@@ -96,6 +102,24 @@ export default function AvatarScreen() {
     reader.readAsDataURL(file);
   }
 
+  // Carga un avatar guardado al formulario: su imagen, voz, idioma y resolución.
+  function pickAvatar(avatar: Avatar) {
+    const id = avatar.identity;
+    const imgUrl = absolutize(id.primaryImageUrl);
+    const candId = `avatar-${avatar.id}`;
+    setCandidates((prev) => {
+      const without = prev.filter((c) => c.id !== candId);
+      return [{ id: candId, dataUrl: imgUrl, name: avatar.name }, ...without];
+    });
+    setSelectedId(candId);
+    setVoice(id.voice);
+    setVoiceLanguage(id.voiceLanguage);
+    setResolution(id.resolution as AvatarResolution);
+    setVoiceMode('tts');
+    // telemetría (no bloquea la UI si falla)
+    markAvatarUsed(avatar.id).catch(() => {});
+  }
+
   const selectedImage = candidates.find((c) => c.id === selectedId);
   const isStreaming = phase !== 'idle' && phase !== 'completed' && phase !== 'failed';
 
@@ -128,6 +152,8 @@ export default function AvatarScreen() {
     try {
       const outcome = await streamGenerateAvatar(
         {
+          // OmniHuman solo aplica en modo audio; en TTS forzamos el estándar.
+          model: voiceMode === 'audio' ? model : 'p_video_avatar',
           image: selectedImage!.dataUrl,
           resolution,
           ...(voiceMode === 'audio' && audioDataUrl
@@ -237,6 +263,8 @@ export default function AvatarScreen() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 32 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <AvatarPicker onPick={pickAvatar} />
+
             <Card padding={24}>
               <StepHeader
                 num={1}
@@ -463,8 +491,67 @@ export default function AvatarScreen() {
             </Card>
 
             <Card padding={24}>
-              <StepHeader num={3} title="Render" hint="Resolucion y ajustes finales." />
+              <StepHeader num={3} title="Render" hint="Motor, resolucion y ajustes finales." />
+
+              {/* Motor / realismo */}
               <div style={{ marginTop: 16 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--fg-3)',
+                    marginBottom: 8,
+                    fontFamily: 'var(--font-mono)',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  Motor
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                  {AVATAR_MODELS.map((m) => {
+                    const disabled = m.requiresAudio && voiceMode !== 'audio';
+                    const selected = model === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => !disabled && setModel(m.id)}
+                        disabled={disabled}
+                        title={disabled ? 'Cambia a "Audio propio" para usar este motor' : m.desc}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: 8,
+                          textAlign: 'left',
+                          background: selected ? 'var(--red-soft)' : 'var(--bg-1)',
+                          border: `1px solid ${selected ? 'var(--red-ring)' : 'var(--line)'}`,
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          opacity: disabled ? 0.45 : 1,
+                          transition: 'all 180ms',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: selected ? 'var(--red-hi)' : 'var(--fg-1)',
+                          }}
+                        >
+                          {m.label}
+                        </div>
+                        <div className="mono" style={{ fontSize: 10, color: 'var(--fg-3)', marginTop: 2 }}>
+                          {m.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {model === 'omni_human' && voiceMode === 'audio' && (
+                  <p style={{ fontSize: 11, color: 'var(--fg-3)', margin: '8px 0 0', fontFamily: 'var(--font-mono)' }}>
+                    OmniHuman: realismo alto, render más lento.
+                  </p>
+                )}
+              </div>
+
+              <div style={{ marginTop: 18 }}>
                 <div
                   style={{
                     fontSize: 11,
@@ -631,7 +718,9 @@ export default function AvatarScreen() {
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  ~60-120s de render - prunaai/p-video-avatar
+                  {voiceMode === 'audio' && model === 'omni_human'
+                    ? '~2-4 min de render - bytedance/omni-human'
+                    : '~60-120s de render - prunaai/p-video-avatar'}
                 </p>
               </div>
             </Card>

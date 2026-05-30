@@ -56,7 +56,7 @@ export default function HomeScreen() {
         </div>
 
         <div
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}
           className="anim-fade-up"
         >
           <ModeCard
@@ -65,14 +65,24 @@ export default function HomeScreen() {
             number="01"
             icon={Icon.Mask}
             title="Avatar"
-            description="Da vida a un retrato. El avatar habla tu guion con voz IA o tu audio. Video lipsync listo para Reels."
-            bullets={['Subi 1 imagen', 'Guion TTS o audio propio', 'Render 720p / 1080p - 9:16']}
+            description="Da vida a un retrato. Desde una imagen nueva o un avatar guardado, habla tu guion con voz IA o tu audio. Video lipsync listo para Reels."
+            bullets={['Desde una imagen o un avatar guardado', 'Guion TTS o audio propio', 'Render 720p / 1080p - 9:16']}
             time="~90s render"
             onClick={() => router.push('/avatar')}
           />
           <ModeCard
-            accent="blue"
+            accent="red"
             number="02"
+            icon={Icon.Plus}
+            title="Crear avatar"
+            description="Guarda tus personajes una vez: sube sus imágenes, define voz y atributos, y reutilizalos en cada video. Tu base de datos de avatares."
+            bullets={['Varias imagenes por personaje', 'Voz, idioma y persona', 'Reutilizable en Avatar y Scripts']}
+            time="Tu biblioteca"
+            onClick={() => router.push('/avatars')}
+          />
+          <ModeCard
+            accent="blue"
+            number="03"
             icon={Icon.Film}
             title="Scripts & Referencias"
             description="El flujo completo: guion con Claude - revision - imagenes por escena - storyboard - video."
@@ -87,7 +97,7 @@ export default function HomeScreen() {
           />
           <ModeCard
             accent="red"
-            number="03"
+            number="04"
             icon={Icon.Edit}
             title="Edicion"
             description="Arma un video con tus propios clips o con los videos generados en la fase de Scripts. Subtitulos y estilos al final."
@@ -138,6 +148,12 @@ export default function HomeScreen() {
             color: 'var(--fg-3)',
           }}
         >
+          <Link href="/avatars" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
+            Mis avatares
+          </Link>
+          <Link href="/profiles" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
+            Perfiles
+          </Link>
           <Link href="/editor" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
             Editores (Remotion - Captions)
           </Link>

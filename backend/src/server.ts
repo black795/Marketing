@@ -15,6 +15,8 @@ import clipsRouter from './routes/clips';
 import editPlanRouter from './routes/edit-plan';
 import renderRouter from './routes/render';
 import editingProjectRouter from './routes/editing-project';
+import avatarRegistryRouter from './routes/avatar-registry';
+import profilesRouter from './routes/profiles';
 import sandboxRouter from './routes/sandbox';
 import autoRouter from './routes/auto';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
@@ -150,6 +152,8 @@ app.use('/api', clipsRouter);
 app.use('/api', editPlanRouter);
 app.use('/api', renderRouter);
 app.use('/api', editingProjectRouter);
+app.use('/api', avatarRegistryRouter);
+app.use('/api', profilesRouter);
 app.use('/api', sandboxRouter);
 app.use('/api', autoRouter);
 

@@ -42,8 +42,29 @@ type Progress = {
   message: string;
 };
 
-const DURATION_OPTIONS = [3, 5, 10] as const;
+const KLING_DURATIONS = [3, 5, 10] as const;
+type KlingDuration = (typeof KLING_DURATIONS)[number];
 const RESOLUTION_OPTIONS: Array<'720p' | '1080p'> = ['720p', '1080p'];
+
+/**
+ * Snappea la duración natural del guion (1.5s, 2.5s, 4s, …) a la grilla
+ * que Kling realmente soporta. Buscamos el valor más cercano; el render
+ * va a ser un poquito más largo pero el trim final se hace en el timeline.
+ */
+function snapKlingDuration(seconds: number | undefined): KlingDuration {
+  if (!Number.isFinite(seconds) || (seconds as number) <= 0) return 5;
+  const s = seconds as number;
+  let best: KlingDuration = KLING_DURATIONS[0];
+  let bestDelta = Math.abs(s - best);
+  for (const opt of KLING_DURATIONS) {
+    const d = Math.abs(s - opt);
+    if (d < bestDelta) {
+      best = opt;
+      bestDelta = d;
+    }
+  }
+  return best;
+}
 
 export default function StoryboardScreen() {
   const router = useRouter();
@@ -55,7 +76,6 @@ export default function StoryboardScreen() {
   const [model, setModel] = useState<VideoModel>(
     hasReferenceImages ? 'kling-v3-omni' : 'kling-v3',
   );
-  const [duration, setDuration] = useState<number>(5);
   const [resolution, setResolution] = useState<'720p' | '1080p'>('1080p');
   const [sound, setSound] = useState<boolean>(true);
 
@@ -71,6 +91,15 @@ export default function StoryboardScreen() {
     for (const p of videoScenes ?? []) m.set(p.scene_number, p);
     return m;
   }, [videoScenes]);
+
+  // Duración por escena: se snapea al valor de Kling más cercano (3/5/10s)
+  // partiendo del valor del guion. El usuario confirma cada uno mirando el
+  // badge en la esquina inferior derecha de la card.
+  const durationByScene = useMemo(() => {
+    const m = new Map<number, KlingDuration>();
+    for (const s of eligibleScenes) m.set(s.scene_number, snapKlingDuration(s.duration));
+    return m;
+  }, [eligibleScenes]);
 
   const [promptsByScene, setPromptsByScene] = useState<Map<number, string>>(
     () => initialPrompts(eligibleScenes, previousByScene),
@@ -164,7 +193,14 @@ export default function StoryboardScreen() {
       scene_number: s.scene_number,
       image_url: s.image_url,
       video_prompt: (promptsByScene.get(s.scene_number) ?? '').trim(),
+      duration: durationByScene.get(s.scene_number) ?? 5,
     }));
+    // top-level duration es el fallback que usa el backend si una escena
+    // viene sin el campo. Tomamos el máximo del lote para no recortar nada.
+    const fallbackDuration = targets.reduce(
+      (max, t) => Math.max(max, t.duration),
+      5,
+    );
 
     const initialStatus = new Map<number, VideoStreamStatus>(statusByNumber);
     for (const t of targets) initialStatus.set(t.scene_number, 'pending');
@@ -182,7 +218,8 @@ export default function StoryboardScreen() {
 
     console.log('[video] POST → /api/generate-videos-from-scenes', {
       model,
-      duration,
+      fallbackDuration,
+      perSceneDurations: targets.map((t) => `${t.scene_number}=${t.duration}s`),
       resolution,
       sound,
       scenes: targets.length,
@@ -193,7 +230,7 @@ export default function StoryboardScreen() {
         {
           model,
           projectId: script.projectId,
-          duration,
+          duration: fallbackDuration,
           resolution,
           sound,
           aspectRatio: form.settings.aspectRatio,
@@ -508,13 +545,32 @@ export default function StoryboardScreen() {
             >
               Parametros
             </div>
-            <SegmentedControl
-              label="Duracion"
-              value={duration}
-              options={DURATION_OPTIONS.map((d) => ({ v: d, label: `${d}s` }))}
-              onChange={(v) => setDuration(v as number)}
-              disabled={isStreaming}
-            />
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--fg-2)',
+                  marginBottom: 6,
+                }}
+              >
+                Duracion
+              </div>
+              <div
+                style={{
+                  padding: '8px 12px',
+                  background: 'var(--bg-1)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 8,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  color: 'var(--fg-2)',
+                  lineHeight: 1.4,
+                }}
+              >
+                Por escena (auto) · viene del guion, redondeada a 3/5/10s
+              </div>
+            </div>
             <div style={{ height: 14 }} />
             <SegmentedControl
               label="Resolucion"
@@ -631,7 +687,10 @@ export default function StoryboardScreen() {
               </div>
               <div>
                 <span style={{ color: 'var(--fg-3)' }}>duracion total:</span>{' '}
-                {includedScenes.length * duration}s
+                {includedScenes.reduce(
+                  (sum, s) => sum + (durationByScene.get(s.scene_number) ?? 5),
+                  0,
+                )}s
               </div>
               <div>
                 <span style={{ color: 'var(--fg-3)' }}>modelo:</span> {model}
@@ -677,6 +736,7 @@ export default function StoryboardScreen() {
               prompt.trim() === (prev.video_prompt ?? '').trim();
             const videoUrl = prev?.local_url || prev?.video_url || null;
             const alreadyDone = !!videoUrl && !prev?.video_error && promptUnchanged;
+            const klingDuration = durationByScene.get(scene.scene_number) ?? 5;
             return (
               <SceneVideoCard
                 key={scene.scene_number}
@@ -688,6 +748,7 @@ export default function StoryboardScreen() {
                 videoError={prev?.video_error}
                 alreadyDone={alreadyDone}
                 disabled={isStreaming}
+                klingDuration={klingDuration}
                 onPrompt={(v) => setPrompt(scene.scene_number, v)}
                 onToggle={() => toggleSelected(scene.scene_number)}
               />
@@ -873,6 +934,7 @@ function SceneVideoCard({
   videoError,
   alreadyDone,
   disabled,
+  klingDuration,
   onPrompt,
   onToggle,
 }: {
@@ -884,6 +946,7 @@ function SceneVideoCard({
   videoError: string | undefined;
   alreadyDone: boolean;
   disabled: boolean;
+  klingDuration: number;
   onPrompt: (v: string) => void;
   onToggle: () => void;
 }) {
@@ -1009,6 +1072,27 @@ function SceneVideoCard({
             falló
           </span>
         )}
+
+        {/* Duración aplicada (snappeada desde scene.duration del guion). */}
+        <span
+          title={`Guion: ${scene.duration}s → Kling: ${klingDuration}s`}
+          style={{
+            position: 'absolute',
+            bottom: 8,
+            right: 8,
+            padding: '3px 9px',
+            borderRadius: 999,
+            background: 'var(--blue)',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            fontFamily: 'var(--font-mono)',
+            letterSpacing: '0.02em',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+          }}
+        >
+          {klingDuration}s
+        </span>
       </div>
 
       <div style={{ padding: '10px 12px 12px' }}>

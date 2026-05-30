@@ -92,6 +92,16 @@ def _extract_url(result: Any) -> str:
 @router.post("/generate-avatar", response_model=GenerateAvatarResponse)
 async def generate_avatar(payload: GenerateAvatarRequest) -> GenerateAvatarResponse:
     has_audio = bool(payload.audio)
+    model = (payload.model or "p_video_avatar").strip()
+
+    # OmniHuman es más realista pero NO hace TTS: requiere audio sí o sí.
+    if model == "omni_human" and not has_audio:
+        raise HTTPException(
+            status_code=400,
+            detail="El modelo realista (omni_human) requiere un archivo de audio; "
+            "no genera voz desde texto. Sube un audio o usa p_video_avatar.",
+        )
+
     if not has_audio and not payload.voice_script.strip():
         raise HTTPException(
             status_code=400,
@@ -139,9 +149,21 @@ async def generate_avatar(payload: GenerateAvatarRequest) -> GenerateAvatarRespo
             temp_files.append(audio_path)
             kwargs["audio"] = str(audio_path)
 
+        # OmniHuman usa solo imagen + audio; p_video_avatar usa el set completo.
+        if model == "omni_human":
+            run_name = "omni_human"
+            run_kwargs: dict[str, Any] = {
+                "image": kwargs["image"],
+                "audio": kwargs["audio"],
+            }
+        else:
+            run_name = "p_video_avatar"
+            run_kwargs = kwargs
+
         logger.info(
-            "→ run_model p_video_avatar resolution=%s mode=%s voice=%s lang=%s "
+            "→ run_model %s resolution=%s mode=%s voice=%s lang=%s "
             'seed=%s video_prompt="%s…"',
+            run_name,
             payload.resolution,
             "audio" if has_audio else "tts",
             payload.voice,
@@ -151,7 +173,7 @@ async def generate_avatar(payload: GenerateAvatarRequest) -> GenerateAvatarRespo
         )
 
         try:
-            result = await run_in_threadpool(run_model, "p_video_avatar", **kwargs)
+            result = await run_in_threadpool(run_model, run_name, **run_kwargs)
         except Exception as exc:
             message = str(exc)
             status_match = _STATUS_PATTERN.search(message)
@@ -169,7 +191,8 @@ async def generate_avatar(payload: GenerateAvatarRequest) -> GenerateAvatarRespo
                 ) from exc
 
             logger.error(
-                "✗ 502 Bad Gateway — p_video_avatar exc_type=%s upstream_status=%s msg=%s",
+                "✗ 502 Bad Gateway — %s exc_type=%s upstream_status=%s msg=%s",
+                run_name,
                 exc_type,
                 upstream_status,
                 message,

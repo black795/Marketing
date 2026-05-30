@@ -15,6 +15,30 @@ import type {
 
 export const AVATAR_RESOLUTIONS: AvatarResolution[] = ['720p', '1080p'];
 
+/**
+ * Motores de generación. p_video_avatar trae TTS (texto o audio); omni_human es
+ * más realista pero NO hace TTS → solo disponible cuando hay audio propio.
+ */
+export const AVATAR_MODELS: {
+  id: 'p_video_avatar' | 'omni_human';
+  label: string;
+  desc: string;
+  requiresAudio: boolean;
+}[] = [
+  {
+    id: 'p_video_avatar',
+    label: 'Estándar (TTS)',
+    desc: 'Voz IA desde texto o audio. Rápido y económico.',
+    requiresAudio: false,
+  },
+  {
+    id: 'omni_human',
+    label: 'Realista (OmniHuman)',
+    desc: 'Mucho más realista. Requiere audio propio (no genera voz desde texto).',
+    requiresAudio: true,
+  },
+];
+
 /** Las 30 voces TTS soportadas, con su género para agrupar en la UI. */
 export const AVATAR_VOICES: { id: string; gender: 'female' | 'male' }[] = [
   { id: 'Zephyr (Female)', gender: 'female' },

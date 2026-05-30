@@ -1,0 +1,19 @@
+# --- Núcleo (obligatorio) -------------------------------------------------
+# La tubería entera corre sólo con esto. Sin libs pesadas.
+numpy>=1.24
+
+# --- Opcional: config en YAML --------------------------------------------
+# Si no lo instalas, se usa la config por defecto de koda_style/config.py.
+PyYAML>=6.0
+
+# --- Opcional: modelos más potentes (Fase 2.5 / 3) -----------------------
+# Descomenta cuando tengas suficiente dataset y quieras subir de nivel.
+# scikit-learn>=1.3      # baselines y métricas
+# xgboost>=2.0           # gradient boosting (cientos+ de ejemplos)
+# torch>=2.2             # transformer de ritmo (miles de ejemplos)
+
+# --- Opcional: capa de PERCEPCIÓN (extraer features desde MP4) ------------
+# Estos NO se entrenan; son pre-entrenados que corres local para sacar features.
+# openai-whisper         # transcripción/voz -> texto + timing
+# scenedetect            # detección de cortes de escena
+# librosa                # energía de audio / beats

@@ -19,6 +19,7 @@ import { metrics } from '../services/metrics';
 const RESOLUTIONS = new Set(['720p', '1080p']);
 
 interface AvatarRequestBody {
+  model?: string;
   image?: string;
   resolution?: string;
   audio?: string | null;
@@ -55,6 +56,7 @@ router.post('/generate-avatar', async (req: Request, res: Response) => {
   const resolution = RESOLUTIONS.has(body.resolution || '')
     ? (body.resolution as string)
     : '720p';
+  const model = body.model === 'omni_human' ? 'omni_human' : 'p_video_avatar';
 
   // ---------------- Validación de payload ----------------
   if (!image) {
@@ -73,6 +75,17 @@ router.post('/generate-avatar', async (req: Request, res: Response) => {
       requestId,
     });
   }
+  // OmniHuman no hace TTS: exige audio. Validamos en el gateway para dar un
+  // error claro antes de gastar una llamada al worker.
+  if (model === 'omni_human' && !audio) {
+    routeLog.warn('payload inválido: omni_human sin audio');
+    return res.status(400).json({
+      success: false,
+      error:
+        'El modelo realista (OmniHuman) requiere un audio: no genera voz desde texto. Sube un audio o usa el modo texto (p-video-avatar).',
+      requestId,
+    });
+  }
 
   const wantsStream =
     req.query.stream === '1' ||
@@ -86,6 +99,7 @@ router.post('/generate-avatar', async (req: Request, res: Response) => {
   );
 
   const avatarInput = {
+    model,
     image,
     resolution,
     audio,
@@ -119,7 +133,7 @@ router.post('/generate-avatar', async (req: Request, res: Response) => {
 
     sse.send({
       event: 'start',
-      data: { jobId, requestId, model: 'p-video-avatar', resolution, mode },
+      data: { jobId, requestId, model, resolution, mode },
     });
 
     // Heartbeat de estado: el render del worker es bloqueante, así que el
