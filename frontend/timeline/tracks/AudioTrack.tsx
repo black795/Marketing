@@ -97,7 +97,7 @@ function renderBlock(
           <Waveform
             scene={scene}
             widthPx={widthPx}
-            barColor="bg-white/80"
+            barColor="bg-[var(--bg-2)]/80"
             visible={visible}
           />
         ) : null}

@@ -13,10 +13,12 @@ from __future__ import annotations
 from .base import DatasetAdapter
 from .synthetic import SyntheticAdapter
 from .jsonl import JsonlAdapter
+from .capcut import CapcutAdapter
 
 _ADAPTERS: dict[str, type[DatasetAdapter]] = {
     SyntheticAdapter.name: SyntheticAdapter,
     JsonlAdapter.name: JsonlAdapter,
+    CapcutAdapter.name: CapcutAdapter,
 }
 
 

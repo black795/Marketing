@@ -20,7 +20,7 @@ export default function TimelineToolbar() {
   const canDelete = selCount > 0;
 
   return (
-    <div className="flex items-center gap-1.5 border-b border-neutral-200 bg-white px-3 py-1.5">
+    <div className="flex items-center gap-1.5 border-b border-[var(--line)] bg-[var(--bg-2)] px-3 py-1.5">
       {/* Herramientas */}
       <div className="flex gap-0.5">
         {TOOLS.map((t) => {
@@ -32,8 +32,8 @@ export default function TimelineToolbar() {
               onClick={() => dispatchUi({ type: 'SET_TOOL', tool: t.id })}
               className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold transition ${
                 active
-                  ? 'bg-brand-pink text-white shadow-sm'
-                  : 'text-neutral-700 hover:bg-neutral-100'
+                  ? 'bg-[var(--blue)] text-white shadow-sm'
+                  : 'text-[var(--fg-2)] hover:bg-[var(--bg-3)]'
               }`}
               title={`${t.description} (${t.shortcut})`}
             >
@@ -44,14 +44,14 @@ export default function TimelineToolbar() {
         })}
       </div>
 
-      <div className="mx-1 h-5 w-px bg-neutral-200" aria-hidden />
+      <div className="mx-1 h-5 w-px bg-[var(--bg-3)]" aria-hidden />
 
       {/* Acciones bulk */}
       <button
         type="button"
         disabled={!canDuplicate}
         onClick={() => dispatchSb({ type: 'DUPLICATE_SCENE', sceneId: ui.selection[0] })}
-        className="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 hover:border-brand-pink disabled:opacity-40"
+        className="rounded border border-[var(--line-strong)] px-2 py-1 text-xs font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] disabled:opacity-40"
         title="Duplicar (Ctrl+D)"
       >
         Duplicar
@@ -66,7 +66,7 @@ export default function TimelineToolbar() {
             atFrameAbsolute: ui.playheadFrame,
           })
         }
-        className="rounded border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 hover:border-brand-pink disabled:opacity-40"
+        className="rounded border border-[var(--line-strong)] px-2 py-1 text-xs font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] disabled:opacity-40"
         title="Split en playhead (Ctrl+K)"
       >
         Split
@@ -78,20 +78,20 @@ export default function TimelineToolbar() {
           dispatchSb({ type: 'RIPPLE_DELETE', sceneIds: ui.selection });
           dispatchUi({ type: 'CLEAR_SELECTION' });
         }}
-        className="rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40"
+        className="rounded border border-[var(--red-ring)] px-2 py-1 text-xs font-semibold text-[var(--red-hi)] hover:bg-[var(--red-soft)] disabled:opacity-40"
         title="Ripple delete (Del)"
       >
         Eliminar
       </button>
 
-      <div className="mx-1 h-5 w-px bg-neutral-200" aria-hidden />
+      <div className="mx-1 h-5 w-px bg-[var(--bg-3)]" aria-hidden />
 
       {/* Snap */}
       <button
         type="button"
         onClick={() => dispatchUi({ type: 'TOGGLE_SNAP' })}
         className={`rounded px-2 py-1 text-xs font-semibold ${
-          ui.snapEnabled ? 'bg-brand-yellow text-neutral-800' : 'text-neutral-500 hover:bg-neutral-100'
+          ui.snapEnabled ? 'bg-brand-yellow text-[var(--fg-1)]' : 'text-[var(--fg-3)] hover:bg-[var(--bg-3)]'
         }`}
         title="Magnetic snap"
       >
@@ -103,24 +103,24 @@ export default function TimelineToolbar() {
         <button
           type="button"
           onClick={zoomOut}
-          className="rounded border border-neutral-300 px-2 py-1 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+          className="rounded border border-[var(--line-strong)] px-2 py-1 text-xs font-bold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
         >
           −
         </button>
-        <span className="w-14 text-center font-mono text-[10px] text-neutral-500">
+        <span className="w-14 text-center font-mono text-[10px] text-[var(--fg-3)]">
           {pxPerFrame}x
         </span>
         <button
           type="button"
           onClick={zoomIn}
-          className="rounded border border-neutral-300 px-2 py-1 text-xs font-bold text-neutral-700 hover:bg-neutral-50"
+          className="rounded border border-[var(--line-strong)] px-2 py-1 text-xs font-bold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
         >
           +
         </button>
       </div>
 
       {/* Info */}
-      <span className="ml-2 text-[10px] text-neutral-400">
+      <span className="ml-2 text-[10px] text-[var(--fg-4)]">
         {sb.project.scenes.length} escenas · {selCount} seleccionadas
       </span>
     </div>

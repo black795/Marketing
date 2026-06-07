@@ -30,8 +30,8 @@ export default function StoryboardLoader({
   }
   if (status === 'loading' || status === 'idle') {
     return (
-      <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-neutral-500">
-        <Spinner size={18} className="text-brand-pink" />
+      <div className="flex h-[60vh] items-center justify-center gap-2 text-sm text-[var(--fg-3)]">
+        <Spinner size={18} className="text-[var(--blue-hi)]" />
         Cargando proyecto…
       </div>
     );
@@ -77,17 +77,17 @@ function EmptyState({
 }) {
   const cls =
     tone === 'error'
-      ? 'border-red-200 bg-red-50 text-red-700'
-      : 'border-neutral-200 bg-white text-neutral-700';
+      ? 'border-[rgba(255,92,92,0.3)] bg-[var(--red-soft)] text-[var(--red-hi)]'
+      : 'border-[var(--line)] bg-[var(--bg-2)] text-[var(--fg-2)]';
   return (
     <div
-      className={`mx-auto mt-10 max-w-md rounded-lg border px-6 py-8 text-center shadow-sm ${cls}`}
+      className={`mx-auto mt-10 max-w-md rounded-lg border px-6 py-8 text-center ${cls}`}
     >
       <p className="text-base font-bold">{title}</p>
       <p className="mt-1 text-sm">{body}</p>
       <Link
         href="/scripts"
-        className="mt-4 inline-block rounded-md bg-brand-pink px-3 py-1.5 text-xs font-semibold text-white hover:bg-pink-600"
+        className="mt-4 inline-block rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--blue-lo)]"
       >
         Ir a Scripts
       </Link>

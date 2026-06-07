@@ -32,7 +32,7 @@ export default function ScenePreview({ scene, fps }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-4)]">
             Escena {String(scene.sceneNumber).padStart(2, '0')} · {scene.role}
           </p>
           <input
@@ -45,7 +45,7 @@ export default function ScenePreview({ scene, fps }: Props) {
                 patch: { name: e.target.value },
               })
             }
-            className="mt-0.5 w-full bg-transparent text-xl font-bold text-neutral-900 focus:outline-none"
+            className="mt-0.5 w-full bg-transparent text-xl font-bold text-[var(--fg-1)] focus:outline-none"
             aria-label="Nombre de la escena"
           />
         </div>
@@ -53,7 +53,7 @@ export default function ScenePreview({ scene, fps }: Props) {
       </div>
 
       {/* Preview grande */}
-      <div className="overflow-hidden rounded-lg border border-neutral-200 bg-black">
+      <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-black">
         <div className="relative mx-auto aspect-[9/16] max-w-[280px]">
           {thumb?.kind === 'video' ? (
             <video
@@ -71,7 +71,7 @@ export default function ScenePreview({ scene, fps }: Props) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-neutral-500">
+            <div className="flex h-full w-full items-center justify-center text-xs text-[var(--fg-3)]">
               No hay preview generado todavía
             </div>
           )}
@@ -90,7 +90,7 @@ export default function ScenePreview({ scene, fps }: Props) {
           onClick={() =>
             dispatch({ type: 'DUPLICATE_SCENE', sceneId: scene.id })
           }
-          className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+          className="flex-1 rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-1.5 text-xs font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
         >
           Duplicar
         </button>
@@ -104,7 +104,7 @@ export default function ScenePreview({ scene, fps }: Props) {
               dispatch({ type: 'SELECT_SCENE', sceneId: null });
             }
           }}
-          className="flex-1 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50"
+          className="flex-1 rounded-md border border-[var(--red-ring)] bg-[var(--bg-2)] px-3 py-1.5 text-xs font-semibold text-[var(--red-hi)] hover:bg-[var(--red-soft)]"
         >
           Eliminar
         </button>
@@ -125,14 +125,14 @@ export default function ScenePreview({ scene, fps }: Props) {
       {/* Captions de esta escena */}
       {scene.captions.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
             Captions
           </p>
-          <ul className="space-y-1 rounded-md border border-neutral-200 bg-white p-2">
+          <ul className="space-y-1 rounded-md border border-[var(--line)] bg-[var(--bg-2)] p-2">
             {scene.captions.map((c) => (
-              <li key={c.id} className="text-[11px] text-neutral-600">
+              <li key={c.id} className="text-[11px] text-[var(--fg-2)]">
                 💬 {c.text}{' '}
-                <span className="text-neutral-400">
+                <span className="text-[var(--fg-4)]">
                   ({c.words.length} palabras · estilo: {c.style})
                 </span>
               </li>
@@ -152,10 +152,10 @@ function DurationControl({ scene, fps }: { scene: Scene; fps: number }) {
   const seconds = framesToSeconds(scene.durationFrames, fps);
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
         Duración
       </span>
-      <div className="flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-2 py-1.5">
+      <div className="flex items-center gap-1.5 rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-2 py-1.5">
         <input
           type="number"
           min={0.5}
@@ -170,10 +170,10 @@ function DurationControl({ scene, fps }: { scene: Scene; fps: number }) {
               patch: { durationFrames: Math.round(next * fps) },
             });
           }}
-          className="w-12 bg-transparent text-right text-sm font-mono text-neutral-800 focus:outline-none"
+          className="w-12 bg-transparent text-right text-sm font-mono text-[var(--fg-1)] focus:outline-none"
         />
-        <span className="text-[11px] text-neutral-500">s</span>
-        <span className="ml-auto text-[10px] font-mono text-neutral-400">
+        <span className="text-[11px] text-[var(--fg-3)]">s</span>
+        <span className="ml-auto text-[10px] font-mono text-[var(--fg-4)]">
           {framesToMmSs(scene.durationFrames, fps)}
         </span>
       </div>
@@ -185,7 +185,7 @@ function IncludedToggle({ scene }: { scene: Scene }) {
   const { dispatch } = useStoryboard();
   return (
     <label className="flex cursor-pointer flex-col gap-1">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
         En el render final
       </span>
       <div
@@ -194,8 +194,8 @@ function IncludedToggle({ scene }: { scene: Scene }) {
         }
         className={`flex h-[34px] items-center justify-between rounded-md border px-2 text-xs font-semibold ${
           scene.included
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-            : 'border-neutral-300 bg-white text-neutral-500'
+            ? 'border-[rgba(43,212,164,0.3)] bg-[var(--success-soft)] text-[var(--success)]'
+            : 'border-[var(--line-strong)] bg-[var(--bg-2)] text-[var(--fg-3)]'
         }`}
       >
         {scene.included ? 'Incluida' : 'Excluida'}
@@ -210,7 +210,7 @@ function IncludedToggle({ scene }: { scene: Scene }) {
 function SceneAssetsBlock({ scene }: { scene: Scene }) {
   if (scene.assets.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-neutral-200 px-3 py-2 text-[11px] text-neutral-400">
+      <p className="rounded-md border border-dashed border-[var(--line)] px-3 py-2 text-[11px] text-[var(--fg-4)]">
         Esta escena no tiene assets — regénera la imagen o video desde el flujo
         Scripts.
       </p>
@@ -218,14 +218,14 @@ function SceneAssetsBlock({ scene }: { scene: Scene }) {
   }
   return (
     <div>
-      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
         Assets ({scene.assets.length})
       </p>
       <ul className="grid grid-cols-3 gap-1.5">
         {scene.assets.map((a) => (
           <li
             key={a.id}
-            className="overflow-hidden rounded-md border border-neutral-200 bg-neutral-50"
+            className="overflow-hidden rounded-md border border-[var(--line)] bg-[var(--bg-1)]"
           >
             <div className="aspect-square w-full bg-neutral-900">
               {a.kind === 'video' && a.src ? (
@@ -239,12 +239,12 @@ function SceneAssetsBlock({ scene }: { scene: Scene }) {
                   loading="lazy"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-[9px] text-neutral-500">
+                <div className="flex h-full w-full items-center justify-center text-[9px] text-[var(--fg-3)]">
                   {a.kind}
                 </div>
               )}
             </div>
-            <p className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-neutral-500">
+            <p className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
               {a.kind}
             </p>
           </li>

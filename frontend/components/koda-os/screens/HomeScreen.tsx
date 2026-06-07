@@ -109,6 +109,22 @@ export default function HomeScreen() {
             time="Sin render IA"
             onClick={() => router.push('/editor/manual')}
           />
+          <ModeCard
+            accent="blue"
+            badge="Nuevo"
+            number="05"
+            icon={Icon.Copy}
+            title="Carrusel"
+            description="Genera carruseles para Instagram, LinkedIn o TikTok. Describí el producto, sumá referencias visuales y Claude arma los prompts slide por slide. Funciona sin guion previo."
+            bullets={[
+              'Producto + referencias visuales',
+              'Tipo, objetivo y plataforma configurables',
+              'Claude arma los prompts de cada slide',
+            ]}
+            time="Standalone · sin guion"
+            fullWidth
+            onClick={() => router.push('/carousel')}
+          />
         </div>
 
         <div
@@ -148,11 +164,17 @@ export default function HomeScreen() {
             color: 'var(--fg-3)',
           }}
         >
+          <Link href="/projects" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
+            Mis proyectos
+          </Link>
           <Link href="/avatars" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
             Mis avatares
           </Link>
           <Link href="/profiles" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
             Perfiles
+          </Link>
+          <Link href="/library" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
+            Biblioteca
           </Link>
           <Link href="/editor" style={{ color: 'var(--fg-3)', textDecoration: 'none' }}>
             Editores (Remotion - Captions)
@@ -176,6 +198,7 @@ function ModeCard({
   time,
   badge,
   recommended,
+  fullWidth,
   onClick,
 }: {
   accent: 'red' | 'blue';
@@ -187,6 +210,7 @@ function ModeCard({
   time: string;
   badge?: string;
   recommended?: boolean;
+  fullWidth?: boolean;
   onClick: () => void;
 }) {
   const [hover, setHover] = useState(false);
@@ -210,7 +234,8 @@ function ModeCard({
         transform: hover ? 'translateY(-3px)' : 'translateY(0)',
         boxShadow: hover ? `0 24px 48px -16px ${glowVar}` : 'var(--shadow-sm)',
         cursor: 'pointer',
-        minHeight: 360,
+        minHeight: fullWidth ? 0 : 360,
+        gridColumn: fullWidth ? '1 / -1' : undefined,
         display: 'flex',
         flexDirection: 'column',
       }}

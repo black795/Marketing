@@ -11,12 +11,12 @@ interface Props {
 }
 
 const ROLE_COLOR: Record<string, string> = {
-  hook: 'bg-brand-pink/60',
+  hook: 'bg-[var(--blue)]/60',
   intro: 'bg-brand-yellow/70',
-  body: 'bg-neutral-300',
-  cta: 'bg-emerald-500/70',
-  outro: 'bg-neutral-600',
-  transition: 'bg-violet-500/70',
+  body: 'bg-[var(--bg-4)]',
+  cta: 'bg-[var(--success)]/70',
+  outro: 'bg-[var(--fg-3)]',
+  transition: 'bg-[var(--blue)]/70',
 };
 
 /**
@@ -45,7 +45,7 @@ export default function TimeRuler({ widthPx }: Props) {
 
   return (
     <div
-      className="relative h-9 select-none border-b border-neutral-200 bg-neutral-50"
+      className="relative h-9 select-none border-b border-[var(--line)] bg-[var(--bg-1)]"
       style={{ width: widthPx }}
     >
       {/* Scene Sections: bandas por rol */}
@@ -57,7 +57,7 @@ export default function TimeRuler({ widthPx }: Props) {
           return (
             <div
               key={s.id}
-              className={`absolute top-0 h-3 ${ROLE_COLOR[s.role] ?? 'bg-neutral-200'}`}
+              className={`absolute top-0 h-3 ${ROLE_COLOR[s.role] ?? 'bg-[var(--bg-3)]'}`}
               style={{ left: x, width: w }}
               title={`${s.role} · escena ${s.sceneNumber}`}
             />
@@ -69,8 +69,8 @@ export default function TimeRuler({ widthPx }: Props) {
       <div className="absolute inset-x-0 bottom-0 h-6">
         {ticks.map(({ s, xPx }) => (
           <div key={s} className="absolute bottom-0 flex flex-col items-start" style={{ left: xPx }}>
-            <span className="block h-2 w-px bg-neutral-400" aria-hidden />
-            <span className="px-1 font-mono text-[10px] text-neutral-500">
+            <span className="block h-2 w-px bg-[var(--fg-4)]" aria-hidden />
+            <span className="px-1 font-mono text-[10px] text-[var(--fg-3)]">
               {framesToMmSs(s * fps, fps)}
             </span>
           </div>

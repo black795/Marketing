@@ -16,6 +16,8 @@ export interface GenerateScriptRequest {
   sceneCount?: number;
   /** Contexto de dominio (Perfil) ya formateado. Sesga el guion al rubro. */
   profileContext?: string;
+  /** Dirección de arte / estética ya formateada (preset o estilo guardado). */
+  styleContext?: string;
 }
 
 export interface GenerateScriptResponse {

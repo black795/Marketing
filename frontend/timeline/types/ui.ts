@@ -24,11 +24,11 @@ export interface TrackMeta {
 }
 
 export const TRACK_METAS: TrackMeta[] = [
-  { id: 'video', label: 'Video', emoji: '🎞️', color: 'bg-brand-pink/80' },
+  { id: 'video', label: 'Video', emoji: '🎞️', color: 'bg-[var(--blue)]/80' },
   { id: 'voice', label: 'Voz', emoji: '🎙️', color: 'bg-indigo-500/80' },
-  { id: 'music', label: 'Música', emoji: '🎵', color: 'bg-violet-500/80' },
-  { id: 'sfx', label: 'SFX', emoji: '💥', color: 'bg-amber-500/80' },
-  { id: 'captions', label: 'Captions', emoji: '💬', color: 'bg-emerald-500/80' },
+  { id: 'music', label: 'Música', emoji: '🎵', color: 'bg-[var(--blue)]/80' },
+  { id: 'sfx', label: 'SFX', emoji: '💥', color: 'bg-[var(--warning)]/80' },
+  { id: 'captions', label: 'Captions', emoji: '💬', color: 'bg-[var(--success)]/80' },
   { id: 'overlays', label: 'Overlays', emoji: '✨', color: 'bg-fuchsia-500/80' },
   { id: 'effects', label: 'Efectos', emoji: '⚡', color: 'bg-sky-500/80' },
 ];

@@ -10,6 +10,7 @@ import {
   type RenderResult,
 } from '@/lib/render-api';
 import type { TimelineDocument } from '@/types/timeline';
+import { RenderProgressPanel, RenderResultPanel } from './AutoPhase';
 
 /**
  * Fase 3 — Junte de clips.
@@ -94,23 +95,23 @@ export default function AssemblePhase({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <Spinner size={18} className="text-brand-pink" />
-        <span className="text-sm text-neutral-600">Cargando proyecto…</span>
+      <div className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-6">
+        <Spinner size={18} className="text-[var(--blue-hi)]" />
+        <span className="text-sm text-[var(--fg-2)]">Cargando proyecto…</span>
       </div>
     );
   }
 
   if (scenes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm text-neutral-600">
+      <div className="rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--bg-2)] p-8 text-center">
+        <p className="text-sm text-[var(--fg-2)]">
           No hay escenas para juntar todavía.
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-[var(--fg-3)]">
           Subí clips en <strong>Inicio → Edición</strong> primero.
         </p>
-        {error && <p className="mt-3 text-xs text-red-600">⚠ {error}</p>}
+        {error && <p className="mt-3 text-xs text-[var(--red-hi)]">⚠ {error}</p>}
       </div>
     );
   }
@@ -169,14 +170,14 @@ export default function AssemblePhase({
   return (
     <div className="space-y-6">
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">⚠ {error}</p>
+        <p className="rounded-md bg-[var(--red-soft)] px-3 py-2 text-xs text-[var(--red-hi)]">⚠ {error}</p>
       )}
 
       {/* Lista de escenas disponibles */}
       <section>
         <header className="mb-2 flex items-center gap-2">
           <span className="text-base" aria-hidden>🎬</span>
-          <h3 className="text-sm font-semibold text-neutral-900">
+          <h3 className="text-sm font-semibold text-[var(--fg-1)]">
             Escenas disponibles ({scenes.length})
           </h3>
         </header>
@@ -184,7 +185,7 @@ export default function AssemblePhase({
           {scenes.map((s) => (
             <div
               key={s.sceneNumber}
-              className="overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-md border border-[var(--line)] bg-[var(--bg-2)]"
             >
               <div className="relative aspect-video w-full bg-black">
                 {s.src && s.kind === 'video' ? (
@@ -212,20 +213,20 @@ export default function AssemblePhase({
             </div>
           ))}
         </div>
-        <p className="mt-2 text-[11px] text-neutral-500">
+        <p className="mt-2 text-[11px] text-[var(--fg-3)]">
           Usá estos números abajo para indicar el orden del junte.
         </p>
       </section>
 
       {/* Editor de orden + prompt */}
-      <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <label className="block text-sm font-semibold text-neutral-900">
+      <section className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
+        <label className="block text-sm font-semibold text-[var(--fg-1)]">
           Orden de las escenas
         </label>
-        <p className="mt-0.5 text-[11px] text-neutral-500">
+        <p className="mt-0.5 text-[11px] text-[var(--fg-3)]">
           Lista de números separados por coma. Si omitís alguno, no se incluye.
-          Ejemplos: <code className="rounded bg-neutral-100 px-1">2, 1, 3</code> o
-          <code className="ml-1 rounded bg-neutral-100 px-1">3, 1</code>.
+          Ejemplos: <code className="rounded bg-[var(--bg-3)] px-1">2, 1, 3</code> o
+          <code className="ml-1 rounded bg-[var(--bg-3)] px-1">3, 1</code>.
         </p>
         <input
           type="text"
@@ -233,14 +234,14 @@ export default function AssemblePhase({
           onChange={(e) => setOrderText(e.target.value)}
           placeholder={scenes.map((s) => s.sceneNumber).join(', ')}
           disabled={rendering}
-          className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 font-mono text-sm focus:border-brand-pink focus:outline-none disabled:opacity-60"
+          className="mt-2 w-full rounded-md border border-[var(--line-strong)] bg-[var(--bg-1)] px-3 py-2 font-mono text-sm text-[var(--fg-1)] placeholder:text-[var(--fg-4)] focus:border-[var(--blue)] focus:outline-none disabled:opacity-60"
         />
         <ParsePreview parsed={parsed} allScenes={scenes.map((s) => s.sceneNumber)} />
 
-        <label className="mt-4 block text-sm font-semibold text-neutral-900">
+        <label className="mt-4 block text-sm font-semibold text-[var(--fg-1)]">
           Instrucciones extra (opcional)
         </label>
-        <p className="mt-0.5 text-[11px] text-neutral-500">
+        <p className="mt-0.5 text-[11px] text-[var(--fg-3)]">
           Texto libre que se guarda en el edit-plan junto al orden.
         </p>
         <textarea
@@ -249,7 +250,7 @@ export default function AssemblePhase({
           placeholder="Ej: junte directo, sin transiciones, ritmo rápido…"
           disabled={rendering}
           rows={3}
-          className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-brand-pink focus:outline-none disabled:opacity-60"
+          className="mt-2 w-full rounded-md border border-[var(--line-strong)] bg-[var(--bg-1)] px-3 py-2 text-sm text-[var(--fg-1)] placeholder:text-[var(--fg-4)] focus:border-[var(--blue)] focus:outline-none disabled:opacity-60"
         />
 
         <div className="mt-4 flex items-center gap-2">
@@ -257,7 +258,7 @@ export default function AssemblePhase({
             type="button"
             onClick={onRender}
             disabled={rendering || parsed.included.length === 0}
-            className="rounded-md bg-brand-pink px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-neutral-300"
+            className="rounded-md bg-[var(--blue)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--blue-lo)] disabled:cursor-not-allowed disabled:bg-[var(--bg-4)] disabled:text-[var(--fg-4)]"
           >
             {rendering ? 'Renderizando…' : '🎞️ Juntar y renderizar'}
           </button>
@@ -265,7 +266,7 @@ export default function AssemblePhase({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-600"
+              className="rounded-md border border-[var(--line-strong)] bg-[var(--bg-3)] px-3 py-2 text-sm font-semibold text-[var(--fg-2)] hover:border-[var(--red)] hover:text-[var(--red-hi)]"
             >
               Cancelar
             </button>
@@ -275,56 +276,16 @@ export default function AssemblePhase({
 
       {/* Progreso */}
       {(rendering || progress || renderError) && (
-        <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-neutral-900">Progreso del render</h3>
-          {renderError && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">⚠ {renderError}</p>
-          )}
-          {progress && !renderError && (
-            <div>
-              <div className="flex items-center justify-between text-xs text-neutral-600">
-                <span className="font-mono uppercase tracking-wide text-neutral-500">
-                  {progress.phase}
-                </span>
-                {typeof progress.progress === 'number' && (
-                  <span className="font-semibold text-neutral-700">
-                    {Math.round(progress.progress * 100)}%
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-xs text-neutral-700">{progress.message}</p>
-              {typeof progress.progress === 'number' && (
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div
-                    className="h-full bg-brand-pink transition-all"
-                    style={{ width: `${Math.round(progress.progress * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+        <RenderProgressPanel progress={progress} renderError={renderError} />
       )}
 
       {/* Resultado */}
       {result && (
-        <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-emerald-900">
-            ✅ Render listo · {result.clipCount} clips · {Math.round(result.durationSeconds * 10) / 10}s
-          </h3>
-          <video
-            src={result.url}
-            controls
-            className="w-full max-w-md rounded-md bg-black"
-          />
-          <a
-            href={result.url}
-            download
-            className="mt-2 inline-block text-xs font-semibold text-emerald-700 hover:underline"
-          >
-            ⬇ Descargar mp4
-          </a>
-        </section>
+        <RenderResultPanel
+          url={result.url}
+          durationSeconds={result.durationSeconds}
+          title={`Render listo · ${result.clipCount} clips`}
+        />
       )}
     </div>
   );
@@ -382,28 +343,28 @@ function ParsePreview({ parsed, allScenes }: { parsed: ParsedOrder; allScenes: n
   const isAll = parsed.included.length === allScenes.length;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-      <span className="text-neutral-500">Resultado:</span>
+      <span className="text-[var(--fg-3)]">Resultado:</span>
       {parsed.included.length === 0 ? (
-        <span className="rounded bg-red-100 px-1.5 py-0.5 font-semibold text-red-700">
+        <span className="rounded bg-[var(--red-soft)] px-1.5 py-0.5 font-semibold text-[var(--red-hi)]">
           sin escenas válidas
         </span>
       ) : (
         parsed.included.map((n, i) => (
           <span
             key={`${n}-${i}`}
-            className="rounded bg-brand-pink/10 px-1.5 py-0.5 font-mono font-semibold text-brand-pink"
+            className="rounded bg-[var(--blue-soft)] px-1.5 py-0.5 font-mono font-semibold text-[var(--blue-hi)]"
           >
             #{n}
           </span>
         ))
       )}
       {!isAll && parsed.omitted.length > 0 && (
-        <span className="ml-2 text-neutral-400">
+        <span className="ml-2 text-[var(--fg-4)]">
           omitidas: {parsed.omitted.map((n) => `#${n}`).join(', ')}
         </span>
       )}
       {parsed.invalid.length > 0 && (
-        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-700">
+        <span className="ml-2 rounded bg-[var(--warning-soft)] px-1.5 py-0.5 font-semibold text-[var(--warning)]">
           inexistentes: {parsed.invalid.join(', ')}
         </span>
       )}

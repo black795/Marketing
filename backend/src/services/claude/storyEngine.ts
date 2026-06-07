@@ -1,5 +1,6 @@
 import Replicate from 'replicate';
 import { STORY_MASTER_PROMPT } from '../../prompts/storyMasterPrompt';
+import { runWebResearch, stripWebSearchMarkers } from '../webSearch';
 import type { GeneratedStory } from '../../types/story';
 
 const REPLICATE_MODEL = 'anthropic/claude-4-sonnet';
@@ -23,6 +24,12 @@ export interface StoryEngineInput {
    * inyecta al INICIO del prompt para sesgar el guion hacia ese rubro.
    */
   profileContext?: string;
+  /**
+   * Dirección de arte / estética (preset "Realista/Cartoon/…" o estilo guardado)
+   * ya formateada por el frontend. Se inyecta para que los image_prompt sigan
+   * ese look.
+   */
+  styleContext?: string;
 }
 
 let cachedClient: Replicate | null = null;
@@ -54,12 +61,23 @@ function extractMentionedSlots(...texts: Array<string | undefined>): number[] {
   return Array.from(set).sort((a, b) => a - b);
 }
 
-function buildUserPrompt(input: StoryEngineInput): string {
+function buildUserPrompt(input: StoryEngineInput, webContext?: string | null): string {
   const parts: string[] = [];
 
   // El contexto de dominio (Perfil) va primero: encuadra todo lo demás.
   if (input.profileContext && input.profileContext.trim().length > 0) {
     parts.push(input.profileContext.trim());
+  }
+
+  // La dirección de arte / estética va a continuación: gobierna el look de
+  // cada image_prompt.
+  if (input.styleContext && input.styleContext.trim().length > 0) {
+    parts.push(input.styleContext.trim());
+  }
+
+  // Investigación web de las marcas marcadas con * (datos reales).
+  if (webContext && webContext.trim().length > 0) {
+    parts.push(webContext.trim());
   }
 
   parts.push(
@@ -145,8 +163,21 @@ export async function generateStoryFromPrompt(
 ): Promise<GeneratedStory> {
   const client = getClient();
 
+  // Busca en internet las marcas marcadas con * y limpia los marcadores
+  // antes de mandar el texto a Claude.
+  const research = await runWebResearch([input.visualPrompt, input.narrativePrompt], {
+    label: 'guion',
+  });
+  const cleanedInput: StoryEngineInput = {
+    ...input,
+    visualPrompt: stripWebSearchMarkers(input.visualPrompt),
+    narrativePrompt: input.narrativePrompt
+      ? stripWebSearchMarkers(input.narrativePrompt)
+      : input.narrativePrompt,
+  };
+
   const replicateInput: Record<string, unknown> = {
-    prompt: buildUserPrompt(input),
+    prompt: buildUserPrompt(cleanedInput, research.contextBlock),
     system_prompt: STORY_MASTER_PROMPT,
     max_tokens: 4096,
     extended_thinking: false,

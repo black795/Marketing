@@ -2,6 +2,11 @@
 
 import { useCallback, useId, useRef, useState } from 'react';
 import { REFERENCE_LIMITS } from '@/lib/generation-settings';
+import {
+  SUPPORTED_IMAGE_MIMES,
+  makeImageId,
+  resizeImageToDataUrl,
+} from '@/lib/image-upload';
 
 export interface ReferenceImage {
   /** id estable cliente, para keys de React */
@@ -24,60 +29,7 @@ interface ReferenceImagesUploaderProps {
   max?: number;
 }
 
-const SUPPORTED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
-
-function makeId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `ref-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-}
-
-async function loadImage(file: File): Promise<HTMLImageElement> {
-  const url = URL.createObjectURL(file);
-  try {
-    return await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`No se pudo leer ${file.name}`));
-      img.src = url;
-    });
-  } finally {
-    // El objectURL se revoca después de que el canvas terminó.
-    // Lo hacemos en el caller para mantener simple este helper.
-    setTimeout(() => URL.revokeObjectURL(url), 1_000);
-  }
-}
-
-async function resizeToDataUrl(
-  file: File,
-  maxSide: number
-): Promise<{ dataUrl: string; bytes: number; width: number; height: number }> {
-  const img = await loadImage(file);
-  const { width: w0, height: h0 } = img;
-  const longest = Math.max(w0, h0);
-  const scale = longest > maxSide ? maxSide / longest : 1;
-  const w = Math.round(w0 * scale);
-  const h = Math.round(h0 * scale);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D no disponible');
-  ctx.drawImage(img, 0, 0, w, h);
-
-  // JPEG quality 0.9 — balance entre tamaño y fidelidad para identidad facial.
-  const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-  const quality = mime === 'image/png' ? undefined : 0.9;
-  const dataUrl = canvas.toDataURL(mime, quality);
-
-  // tamaño aproximado del data url (base64 = ~4/3 del binario)
-  const base64Len = dataUrl.length - (dataUrl.indexOf(',') + 1);
-  const bytes = Math.floor((base64Len * 3) / 4);
-
-  return { dataUrl, bytes, width: w, height: h };
-}
+const SUPPORTED_MIMES: readonly string[] = SUPPORTED_IMAGE_MIMES;
 
 export default function ReferenceImagesUploader({
   value,
@@ -135,12 +87,12 @@ export default function ReferenceImagesUploader({
       try {
         for (const f of toProcess) {
           try {
-            const { dataUrl, bytes, width, height } = await resizeToDataUrl(
+            const { dataUrl, bytes, width, height } = await resizeImageToDataUrl(
               f,
               REFERENCE_LIMITS.maxSidePx
             );
             next.push({
-              id: makeId(),
+              id: makeImageId('ref'),
               dataUrl,
               name: f.name,
               bytes,

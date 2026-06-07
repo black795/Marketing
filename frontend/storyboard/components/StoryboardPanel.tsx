@@ -49,26 +49,26 @@ export default function StoryboardPanel() {
   return (
     <div className="flex h-[calc(100vh-3rem)] min-h-0 flex-col gap-3 lg:flex-row lg:gap-4">
       {/* Sidebar materiales — colapsa a top en mobile */}
-      <div className="h-64 shrink-0 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm lg:h-auto lg:w-72">
+      <div className="h-64 shrink-0 overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-2)] shadow-sm lg:h-auto lg:w-72">
         <AssetSidebar project={state.project} />
       </div>
 
       {/* Grid central + preview */}
       <div className="flex min-h-0 flex-1 flex-col gap-3 xl:flex-row xl:gap-4">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-neutral-200 bg-white shadow-sm">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-[var(--line)] bg-[var(--bg-2)] shadow-sm">
           <TopBar />
           <ScenesGrid fps={fps} />
         </div>
 
-        <aside className="h-full min-h-0 shrink-0 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm xl:w-[360px]">
+        <aside className="h-full min-h-0 shrink-0 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4 shadow-sm xl:w-[360px]">
           {selected ? (
             <ScenePreview scene={selected} fps={fps} />
           ) : (
             <div className="flex h-full min-h-[200px] flex-col items-center justify-center text-center">
-              <p className="text-sm font-semibold text-neutral-700">
+              <p className="text-sm font-semibold text-[var(--fg-2)]">
                 Selecciona una escena
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-[var(--fg-3)]">
                 Click sobre cualquier card del grid para editarla, regenerarla
                 o re-prompt-earla.
               </p>
@@ -91,15 +91,15 @@ function TopBar() {
     state.project.metadata.durationFrames / state.project.renderConfig.fps;
 
   return (
-    <div className="flex items-center gap-3 border-b border-neutral-200 px-4 py-2.5">
+    <div className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-2.5">
       <input
         type="text"
         value={state.project.title}
         onChange={(e) => dispatch({ type: 'SET_TITLE', title: e.target.value })}
-        className="flex-1 bg-transparent text-sm font-bold text-neutral-900 focus:outline-none"
+        className="flex-1 bg-transparent text-sm font-bold text-[var(--fg-1)] focus:outline-none"
         aria-label="Título del proyecto"
       />
-      <span className="hidden text-[11px] text-neutral-400 sm:inline">
+      <span className="hidden text-[11px] text-[var(--fg-4)] sm:inline">
         {state.project.scenes.length} escenas · {totalSec.toFixed(1)}s
       </span>
       <AutoEditMenu variant="compact" />
@@ -110,7 +110,7 @@ function TopBar() {
           onClick={undo}
           disabled={!canUndo}
           title="Deshacer"
-          className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+          className="rounded-md border border-[var(--line-strong)] px-2 py-1 text-xs font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)] disabled:opacity-40"
         >
           ↶
         </button>
@@ -119,7 +119,7 @@ function TopBar() {
           onClick={redo}
           disabled={!canRedo}
           title="Rehacer"
-          className="rounded-md border border-neutral-300 px-2 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-40"
+          className="rounded-md border border-[var(--line-strong)] px-2 py-1 text-xs font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)] disabled:opacity-40"
         >
           ↷
         </button>
@@ -131,11 +131,11 @@ function TopBar() {
 function SaveStateBadge() {
   const { state } = useStoryboard();
   const map: Record<typeof state.saveState, { label: string; cls: string }> = {
-    idle: { label: '·', cls: 'text-neutral-400' },
-    dirty: { label: 'modificado', cls: 'text-amber-600' },
+    idle: { label: '·', cls: 'text-[var(--fg-4)]' },
+    dirty: { label: 'modificado', cls: 'text-[var(--warning)]' },
     saving: { label: 'guardando…', cls: 'text-blue-600' },
-    saved: { label: '✓ guardado', cls: 'text-emerald-600' },
-    error: { label: 'error', cls: 'text-red-600' },
+    saved: { label: '✓ guardado', cls: 'text-[var(--success)]' },
+    error: { label: 'error', cls: 'text-[var(--red-hi)]' },
   };
   const m = map[state.saveState];
   return (
@@ -159,7 +159,7 @@ function ScenesGrid({ fps }: { fps: number }) {
   if (scenes.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center p-10 text-center">
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-[var(--fg-3)]">
           Este proyecto aún no tiene escenas. Genera un guion + imágenes desde{' '}
           <span className="font-semibold">Scripts</span> para empezar.
         </p>

@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useRef, useState } from 'react';
 import { AVATAR_IMAGE_LIMITS, formatBytes } from '@/lib/avatar';
+import { makeImageId, resizeImageToDataUrl } from '@/lib/image-upload';
 import { dlog, dwarn } from '@/lib/debug-log';
 
 /** Una imagen candidata de avatar, ya redimensionada en el cliente. */
@@ -22,54 +23,6 @@ interface AvatarImageDropzoneProps {
   onChangeCandidates: (next: AvatarImage[]) => void;
   onSelect: (id: string) => void;
   disabled?: boolean;
-}
-
-function makeId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `avatar-img-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-}
-
-function loadImage(file: File): Promise<HTMLImageElement> {
-  const url = URL.createObjectURL(file);
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      setTimeout(() => URL.revokeObjectURL(url), 1_000);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error(`No se pudo leer ${file.name}`));
-    };
-    img.src = url;
-  });
-}
-
-/** Redimensiona la imagen al lado máximo permitido y devuelve un data: URL. */
-async function resizeToDataUrl(
-  file: File,
-  maxSide: number
-): Promise<{ dataUrl: string; bytes: number; width: number; height: number }> {
-  const img = await loadImage(file);
-  const longest = Math.max(img.width, img.height);
-  const scale = longest > maxSide ? maxSide / longest : 1;
-  const w = Math.round(img.width * scale);
-  const h = Math.round(img.height * scale);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D no disponible');
-  ctx.drawImage(img, 0, 0, w, h);
-
-  const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-  const dataUrl = canvas.toDataURL(mime, mime === 'image/png' ? undefined : 0.92);
-  const base64Len = dataUrl.length - (dataUrl.indexOf(',') + 1);
-  const bytes = Math.floor((base64Len * 3) / 4);
-  return { dataUrl, bytes, width: w, height: h };
 }
 
 /**
@@ -135,11 +88,12 @@ export default function AvatarImageDropzone({
       try {
         for (const f of toProcess) {
           try {
-            const { dataUrl, bytes, width, height } = await resizeToDataUrl(
+            const { dataUrl, bytes, width, height } = await resizeImageToDataUrl(
               f,
-              AVATAR_IMAGE_LIMITS.maxSidePx
+              AVATAR_IMAGE_LIMITS.maxSidePx,
+              0.92
             );
-            const id = makeId();
+            const id = makeImageId('avatar-img');
             if (!firstNewId) firstNewId = id;
             next.push({ id, dataUrl, name: f.name, bytes, width, height });
             dlog('avatar-upload', 'imagen procesada', {

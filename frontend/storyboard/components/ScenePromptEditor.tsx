@@ -44,7 +44,7 @@ export default function ScenePromptEditor({ scene }: Props) {
       <div>
         <label
           htmlFor={`scene-prompt-${scene.id}`}
-          className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+          className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]"
         >
           Prompt creativo de la escena
         </label>
@@ -54,12 +54,12 @@ export default function ScenePromptEditor({ scene }: Props) {
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           placeholder="Describe cómo quieres editarla — la IA generará una variante de esta escena."
-          className="w-full resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+          className="w-full resize-none rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-2 text-sm text-[var(--fg-1)] placeholder:text-[var(--fg-4)] focus:border-[var(--blue)] focus:outline-none focus:ring-1 focus:ring-[var(--blue)]"
         />
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           Quick prompts
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -68,7 +68,7 @@ export default function ScenePromptEditor({ scene }: Props) {
               key={qp.id}
               type="button"
               onClick={() => setDraft((cur) => applyQuickPrompt(cur, qp))}
-              className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[11px] font-medium text-neutral-700 transition hover:border-brand-pink hover:text-brand-pink"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--bg-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--fg-2)] transition hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
               title={qp.inject}
             >
               <span>{qp.emoji}</span>

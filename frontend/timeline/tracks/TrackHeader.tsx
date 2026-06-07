@@ -20,18 +20,18 @@ export default function TrackHeader({ kind, heightPx }: Props) {
 
   return (
     <div
-      className="flex shrink-0 items-center gap-1 border-b border-r border-neutral-200 bg-neutral-50 px-2"
+      className="flex shrink-0 items-center gap-1 border-b border-r border-[var(--line)] bg-[var(--bg-1)] px-2"
       style={{ height: heightPx }}
     >
       <span className="text-base leading-none">{meta.emoji}</span>
-      <span className="flex-1 truncate text-[11px] font-semibold text-neutral-700">
+      <span className="flex-1 truncate text-[11px] font-semibold text-[var(--fg-2)]">
         {meta.label}
       </span>
       <button
         type="button"
         onClick={() => dispatchUi({ type: 'TOGGLE_TRACK', track: kind, flag: 'muted' })}
         title="Mute"
-        className={`rounded px-1 text-[10px] font-bold ${isMuted ? 'bg-red-500 text-white' : 'text-neutral-400 hover:text-neutral-700'}`}
+        className={`rounded px-1 text-[10px] font-bold ${isMuted ? 'bg-[var(--red)] text-white' : 'text-[var(--fg-4)] hover:text-[var(--fg-2)]'}`}
       >
         M
       </button>
@@ -39,7 +39,7 @@ export default function TrackHeader({ kind, heightPx }: Props) {
         type="button"
         onClick={() => dispatchUi({ type: 'TOGGLE_TRACK', track: kind, flag: 'soloed' })}
         title="Solo"
-        className={`rounded px-1 text-[10px] font-bold ${isSoloed ? 'bg-yellow-400 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+        className={`rounded px-1 text-[10px] font-bold ${isSoloed ? 'bg-yellow-400 text-[var(--fg-1)]' : 'text-[var(--fg-4)] hover:text-[var(--fg-2)]'}`}
       >
         S
       </button>
@@ -47,7 +47,7 @@ export default function TrackHeader({ kind, heightPx }: Props) {
         type="button"
         onClick={() => dispatchUi({ type: 'TOGGLE_TRACK', track: kind, flag: 'locked' })}
         title="Lock"
-        className={`rounded px-1 text-[10px] font-bold ${isLocked ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-neutral-700'}`}
+        className={`rounded px-1 text-[10px] font-bold ${isLocked ? 'bg-[var(--fg-2)] text-white' : 'text-[var(--fg-4)] hover:text-[var(--fg-2)]'}`}
       >
         🔒
       </button>

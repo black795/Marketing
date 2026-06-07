@@ -35,7 +35,7 @@ export default function ScenePreviewRenderer({ scene, cssFilter }: Props) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumb.src} alt="" className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-500">
+        <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--fg-3)]">
           sin preview
         </div>
       )}

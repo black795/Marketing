@@ -17,8 +17,8 @@ interface Props {
 export default function TrackRow({ heightPx, widthPx, children, tone = 'default' }: Props) {
   return (
     <div
-      className={`relative border-b border-neutral-200 ${
-        tone === 'muted' ? 'bg-neutral-100' : 'bg-white'
+      className={`relative border-b border-[var(--line)] ${
+        tone === 'muted' ? 'bg-[var(--bg-3)]' : 'bg-[var(--bg-2)]'
       }`}
       style={{ height: heightPx, width: widthPx }}
     >

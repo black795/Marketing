@@ -79,7 +79,7 @@ def main(argv=None) -> int:
     # export del perfil consumible por el motor TS
     from ..inference.export import export_style_profile
     profile_path = out_dir / "style_profile.json"
-    export_style_profile(model, profile_path, cfg)
+    export_style_profile(model, profile_path, cfg, examples=train)
     print(f"Perfil exportado: {profile_path}")
     return 0
 

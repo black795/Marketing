@@ -192,19 +192,19 @@ export default function CaptionsEditorStudio({
     <div className="space-y-6">
       {/* 1. Plantilla de estilo */}
       <section>
-        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           <Step n={1} /> Estilo de subtítulos
         </h3>
 
         {loadingTemplates ? (
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <Spinner size={16} className="text-brand-pink" /> Cargando plantillas…
+          <div className="flex items-center gap-2 text-sm text-[var(--fg-3)]">
+            <Spinner size={16} className="text-[var(--blue-hi)]" /> Cargando plantillas…
           </div>
         ) : templatesError ? (
-          <div className="rounded-md bg-red-50 px-4 py-3 text-xs text-red-700">
+          <div className="rounded-md bg-[var(--red-soft)] px-4 py-3 text-xs text-[var(--red-hi)]">
             <p className="font-semibold">No se pudieron cargar las plantillas.</p>
             <p className="mt-0.5">{templatesError}</p>
-            <p className="mt-2 text-red-600">
+            <p className="mt-2 text-[var(--red-hi)]">
               Revisa la API key en{' '}
               <Link href="/settings" className="font-semibold underline">
                 ⚙️ Configuración de APIs
@@ -214,13 +214,13 @@ export default function CaptionsEditorStudio({
             <button
               type="button"
               onClick={loadTemplates}
-              className="mt-2 rounded border border-red-300 bg-white px-2 py-1 font-semibold text-red-700 hover:bg-red-50"
+              className="mt-2 rounded border border-[var(--red-ring)] bg-[var(--bg-2)] px-2 py-1 font-semibold text-[var(--red-hi)] hover:bg-[var(--red-soft)]"
             >
               Reintentar
             </button>
           </div>
         ) : templates.length === 0 ? (
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-[var(--fg-3)]">
             El proveedor no devolvió plantillas de estilo.
           </p>
         ) : (
@@ -245,8 +245,8 @@ export default function CaptionsEditorStudio({
                     }}
                     className={`group block w-full overflow-hidden rounded-lg border-2 text-left transition disabled:opacity-60 ${
                       active
-                        ? 'border-brand-pink ring-2 ring-brand-pink/30'
-                        : 'border-neutral-200 hover:border-neutral-300'
+                        ? 'border-[var(--blue)] ring-2 ring-[var(--blue)]/30'
+                        : 'border-[var(--line)] hover:border-[var(--line-strong)]'
                     }`}
                   >
                     <div
@@ -263,17 +263,17 @@ export default function CaptionsEditorStudio({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-neutral-500">
+                        <div className="flex h-full items-center justify-center text-xs text-[var(--fg-3)]">
                           sin preview
                         </div>
                       )}
                       {active && (
-                        <span className="absolute right-1.5 top-1.5 inline-flex items-center rounded-full bg-brand-pink px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="absolute right-1.5 top-1.5 inline-flex items-center rounded-full bg-[var(--blue)] px-1.5 py-0.5 text-[10px] font-bold text-white">
                           ✓
                         </span>
                       )}
                     </div>
-                    <p className="truncate px-2 py-1.5 text-xs font-semibold text-neutral-700">
+                    <p className="truncate px-2 py-1.5 text-xs font-semibold text-[var(--fg-2)]">
                       {t.name}
                     </p>
                   </button>
@@ -286,16 +286,16 @@ export default function CaptionsEditorStudio({
 
       {/* 2. Video de origen */}
       <section>
-        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           <Step n={2} /> Video a subtitular
         </h3>
 
         {/* Videos del proyecto — atajo cuando se llega desde /scripts */}
         {projectTimeline && projectVideoClips.length > 0 && (
-          <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50/60 p-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          <div className="mb-3 rounded-md border border-[var(--line)] bg-[var(--bg-1)]/60 p-3">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
               Videos del proyecto{' '}
-              <span className="font-normal normal-case text-neutral-400">
+              <span className="font-normal normal-case text-[var(--fg-4)]">
                 · {projectTimeline.title}
               </span>
             </p>
@@ -311,8 +311,8 @@ export default function CaptionsEditorStudio({
                       title={clip.src ?? ''}
                       className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition disabled:opacity-50 ${
                         active
-                          ? 'border-brand-pink bg-brand-pink text-white'
-                          : 'border-neutral-300 bg-white text-neutral-700 hover:border-brand-pink hover:text-brand-pink'
+                          ? 'border-[var(--blue)] bg-[var(--blue)] text-white'
+                          : 'border-[var(--line-strong)] bg-[var(--bg-2)] text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]'
                       }`}
                     >
                       🎞️ Escena {clip.sceneNumber}
@@ -324,7 +324,7 @@ export default function CaptionsEditorStudio({
           </div>
         )}
         {projectTimelineError && (
-          <p className="mb-2 text-[11px] text-amber-700">{projectTimelineError}</p>
+          <p className="mb-2 text-[11px] text-[var(--warning)]">{projectTimelineError}</p>
         )}
 
         <input
@@ -333,9 +333,9 @@ export default function CaptionsEditorStudio({
           onChange={(e) => setVideoUrl(e.target.value)}
           disabled={isActive}
           placeholder="https://… URL de un MP4 vertical (9:16, máx 50 MB)"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink disabled:bg-neutral-50"
+          className="w-full rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-2 text-sm text-[var(--fg-1)] focus:border-[var(--blue)] focus:outline-none focus:ring-1 focus:ring-[var(--blue)] disabled:bg-[var(--bg-1)]"
         />
-        <p className="mt-1 text-[11px] text-neutral-400">
+        <p className="mt-1 text-[11px] text-[var(--fg-4)]">
           {projectTimeline
             ? 'Elige un video del proyecto arriba o pega cualquier otra URL. 9:16, MP4/MOV, máx 50 MB.'
             : 'Pega la URL de un video ya generado (p. ej. el resultado del modo Avatar o un render). Debe ser 9:16, MP4/MOV, máximo 50 MB.'}
@@ -345,13 +345,13 @@ export default function CaptionsEditorStudio({
       {/* 3. Acción */}
       <section>
         {isActive ? (
-          <div className="rounded-lg border border-neutral-200 bg-white p-4">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
             <div className="mb-3 flex items-center gap-3">
-              <Spinner size={18} className="text-brand-pink" />
-              <p className="flex-1 text-sm font-semibold text-neutral-800">
+              <Spinner size={18} className="text-[var(--blue-hi)]" />
+              <p className="flex-1 text-sm font-semibold text-[var(--fg-1)]">
                 {statusMessage || 'Procesando…'}
               </p>
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-4)]">
                 {phase}
               </span>
             </div>
@@ -378,7 +378,7 @@ export default function CaptionsEditorStudio({
         )}
 
         {warning && (
-          <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <p className="mt-2 rounded-md bg-[var(--warning-soft)] px-3 py-2 text-[11px] text-[var(--warning)]">
             ⚠ {warning}
           </p>
         )}
@@ -386,11 +386,11 @@ export default function CaptionsEditorStudio({
 
       {/* 4. Resultado */}
       {phase === 'failed' && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50/60 p-4">
-          <p className="text-sm font-semibold text-red-800">
+        <div className="rounded-lg border border-[var(--red-ring)] bg-[var(--red-soft)]/60 p-4">
+          <p className="text-sm font-semibold text-[var(--red-hi)]">
             No se pudieron generar los captions
           </p>
-          <p className="mt-1 text-xs text-red-700">{error}</p>
+          <p className="mt-1 text-xs text-[var(--red-hi)]">{error}</p>
           <div className="mt-3 flex justify-end">
             <LoadingButton variant="primary" onClick={handleGenerate}>
               Reintentar
@@ -400,14 +400,14 @@ export default function CaptionsEditorStudio({
       )}
 
       {phase === 'cancelled' && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-800">
+        <div className="rounded-lg border border-[rgba(245,181,68,0.3)] bg-[var(--warning-soft)]/60 p-4 text-sm text-[var(--warning)]">
           Job cancelado. Puedes volver a generarlo cuando quieras.
         </div>
       )}
 
       {phase === 'completed' && result && (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
-          <p className="mb-3 text-sm font-semibold text-neutral-800">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
+          <p className="mb-3 text-sm font-semibold text-[var(--fg-1)]">
             ✅ Video subtitulado listo
           </p>
           <div className="mx-auto max-w-xs overflow-hidden rounded-lg bg-neutral-900">
@@ -426,7 +426,7 @@ export default function CaptionsEditorStudio({
               download={`captioned_${result.jobId}.mp4`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand-pink px-3 py-2 text-sm font-semibold text-white hover:bg-pink-600"
+              className="inline-flex items-center gap-1.5 rounded-md bg-[var(--blue)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--blue-lo)]"
             >
               ↓ Descargar
             </a>
@@ -442,7 +442,7 @@ export default function CaptionsEditorStudio({
 
 function Step({ n }: { n: number }) {
   return (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-pink text-[10px] font-bold text-white">
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--blue)] text-[10px] font-bold text-white">
       {n}
     </span>
   );

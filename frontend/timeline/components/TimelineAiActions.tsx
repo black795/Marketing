@@ -95,13 +95,13 @@ export default function TimelineAiActions() {
   }
 
   return (
-    <div className="space-y-2 border-t border-neutral-200 bg-white p-3">
+    <div className="space-y-2 border-t border-[var(--line)] bg-[var(--bg-2)] p-3">
       <div className="flex items-center gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           IA Actions
         </p>
         {ui.selection.length > 0 && (
-          <span className="rounded bg-brand-pink/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-pink">
+          <span className="rounded bg-[var(--blue)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--blue-hi)]">
             sobre {ui.selection.length} escena{ui.selection.length === 1 ? '' : 's'}
           </span>
         )}
@@ -117,13 +117,13 @@ export default function TimelineAiActions() {
             if (e.key === 'Enter') interpretPrompt();
           }}
           placeholder='Edita por prompt — ej. "hazlo más TikTok", "cinemático", "podcast"…'
-          className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+          className="flex-1 rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-1.5 text-xs text-[var(--fg-1)] placeholder:text-[var(--fg-4)] focus:border-[var(--blue)] focus:outline-none focus:ring-1 focus:ring-[var(--blue)]"
         />
         <button
           type="button"
           onClick={interpretPrompt}
           disabled={promptDraft.trim().length === 0}
-          className="rounded-md bg-brand-pink px-3 py-1.5 text-xs font-semibold text-white hover:bg-pink-600 disabled:opacity-40"
+          className="rounded-md bg-[var(--blue)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--blue-lo)] disabled:opacity-40"
         >
           Aplicar
         </button>
@@ -136,7 +136,7 @@ export default function TimelineAiActions() {
             key={p.id}
             type="button"
             onClick={() => applyPreset(p)}
-            className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--bg-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
             title={p.description}
           >
             <span>{p.emoji}</span>
@@ -146,7 +146,7 @@ export default function TimelineAiActions() {
         <button
           type="button"
           onClick={autoSyncCaptions}
-          className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--bg-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
         >
           🔄 Sync captions
         </button>
@@ -154,14 +154,14 @@ export default function TimelineAiActions() {
           type="button"
           onClick={regenerateSelected}
           disabled={ui.selection.length === 0}
-          className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"
+          className="inline-flex items-center gap-1 rounded-full border border-[var(--line)] bg-[var(--bg-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)] disabled:opacity-40"
         >
           🪄 Regenerar
         </button>
       </div>
 
       {lastMessage && (
-        <p className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] text-emerald-700">
+        <p className="rounded-md bg-[var(--success-soft)] px-2 py-1 text-[10px] text-[var(--success)]">
           {lastMessage}
         </p>
       )}

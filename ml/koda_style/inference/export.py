@@ -29,9 +29,51 @@ from __future__ import annotations
 import json
 from itertools import product
 from pathlib import Path
+from statistics import median
 
 from ..models.multihead import StyleModel
 from ..schema import Example, SceneFeatures, SceneLabels
+
+
+def _pct(sorted_vals: list[float], q: float) -> float:
+    """Percentil simple (nearest-rank) sobre una lista ya ordenada."""
+    if not sorted_vals:
+        return 0.0
+    i = min(len(sorted_vals) - 1, max(0, round(q * (len(sorted_vals) - 1))))
+    return sorted_vals[i]
+
+
+def _duration_policy(examples: list[Example], head: str) -> dict:
+    """Tabla de ritmo: duración típica (mediana + rango) global y por rol.
+
+    Más robusta que una regresión lineal sobre pocos datos y directamente
+    consumible: el motor TS sostiene cada clip ~`median` segundos según su rol.
+    """
+    by_role: dict[str, list[float]] = {}
+    allv: list[float] = []
+    for e in examples:
+        v = getattr(e.labels, head)
+        if v is None:
+            continue
+        v = float(v)
+        allv.append(v)
+        by_role.setdefault(e.features.role, []).append(v)
+
+    def stats(vals: list[float]) -> dict:
+        s = sorted(vals)
+        return {
+            "median": round(median(s), 3),
+            "p25": round(_pct(s, 0.25), 3),
+            "p75": round(_pct(s, 0.75), 3),
+            "n": len(s),
+        }
+
+    return {
+        "kind": "regression",
+        "unit": "seconds",
+        "overall": stats(allv) if allv else {"median": 0, "p25": 0, "p75": 0, "n": 0},
+        "by_role": {r: stats(v) for r, v in sorted(by_role.items())},
+    }
 
 
 def _median_features(model: StyleModel) -> dict:
@@ -49,7 +91,12 @@ def _median_features(model: StyleModel) -> dict:
     }
 
 
-def export_style_profile(model: StyleModel, out_path: str | Path, cfg: dict) -> Path:
+def export_style_profile(
+    model: StyleModel,
+    out_path: str | Path,
+    cfg: dict,
+    examples: list[Example] | None = None,
+) -> Path:
     top_k = cfg.get("export", {}).get("top_k", 3)
     base = _median_features(model)
 
@@ -62,7 +109,11 @@ def export_style_profile(model: StyleModel, out_path: str | Path, cfg: dict) -> 
         if head not in model.models:
             continue
         if kind == "regression":
-            out["heads"][head] = {"kind": "regression", "note": "predicción continua; servir el modelo"}
+            out["heads"][head] = (
+                _duration_policy(examples, head)
+                if examples
+                else {"kind": "regression", "note": "predicción continua; servir el modelo"}
+            )
             continue
         policy = []
         for role, emo, prev in product(roles, emotions, prev_emotions):

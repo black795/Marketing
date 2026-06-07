@@ -8,7 +8,7 @@
 //   - escribir un video_prompt por escena (movimiento de camara/accion)
 //   - seleccionar cuales generar/regenerar
 // Y abre un stream SSE que llena cada card con el video URL conforme Replicate
-// los va devolviendo. Cancel mata el stream. Continuar pasa a /styles.
+// los va devolviendo. Cancel mata el stream. Continuar pasa a /carousel.
 //
 // Port del legacy VideoReviewPanel + handleStartVideoGeneration al Koda OS.
 
@@ -24,6 +24,7 @@ import {
   Spinner,
 } from '../primitives';
 import { projectStore, useProject } from '../project-store';
+import SaveFavoriteButton from '../SaveFavoriteButton';
 import {
   streamGenerateVideosFromScenes,
   StreamCancelledError,
@@ -398,15 +399,16 @@ export default function StoryboardScreen() {
               >
                 Volver a imagenes
               </Button>
+              <SaveFavoriteButton />
               <Button
                 variant="primary"
                 size="md"
                 icon={Icon.Arrow}
-                onClick={() => router.push('/styles')}
+                onClick={() => router.push('/carousel')}
                 disabled={!allDone}
                 glow
               >
-                Continuar a estilo
+                Continuar a carrusel
               </Button>
             </>
           )

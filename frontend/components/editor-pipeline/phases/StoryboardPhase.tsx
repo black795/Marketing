@@ -19,7 +19,7 @@ export default function StoryboardPhase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-1)] p-3">
       <StoryboardLoader projectId={projectId} />
     </div>
   );

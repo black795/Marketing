@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type CSSProperties } from 'react';
 import {
   nextPhase,
   PHASE_HINT,
@@ -58,24 +58,45 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
   }, [current, goToPhase, markCompleted]);
 
   return (
-    <main className="min-h-screen bg-neutral-50 pb-24">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-[11px] font-semibold text-neutral-500 hover:text-brand-pink"
+    <div style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          background: 'var(--bg-1)',
+          borderBottom: '1px solid var(--line)',
+        }}
+      >
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '12px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span
+              className="mono"
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: 'var(--fg-1)',
+                fontFamily: 'var(--font-display)',
+              }}
             >
-              ← Inicio
-            </Link>
-            <span className="text-sm font-bold text-neutral-900">
-              🎬 Editor — pipeline cinematográfico
+              Editor · pipeline cinematográfico
             </span>
-            <span className="ml-auto rounded-full bg-neutral-100 px-2.5 py-0.5 text-[11px] font-mono text-neutral-600">
+            <span
+              className="mono"
+              style={{
+                marginLeft: 'auto',
+                padding: '3px 10px',
+                borderRadius: 999,
+                background: 'var(--bg-3)',
+                border: '1px solid var(--line)',
+                fontSize: 11,
+                color: 'var(--fg-3)',
+              }}
+            >
               {projectId}
             </span>
           </div>
-          <div className="mt-3">
+          <div style={{ marginTop: 12 }}>
             <PipelineStepper
               current={current}
               status={state.status}
@@ -85,14 +106,32 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-6">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
+      <div style={{ flex: 1, maxWidth: 1280, width: '100%', margin: '0 auto', padding: '24px' }}>
+        <div style={{ marginBottom: 20 }}>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 24,
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'var(--fg-1)',
+              margin: 0,
+            }}
+          >
             {PHASE_LABEL[current]}
           </h2>
-          <p className="mt-1 text-sm text-neutral-500">{PHASE_HINT[current]}</p>
+          <p style={{ marginTop: 4, fontSize: 14, color: 'var(--fg-3)' }}>{PHASE_HINT[current]}</p>
           {loadError && (
-            <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+            <p
+              style={{
+                marginTop: 8,
+                borderRadius: 6,
+                background: 'var(--red-soft)',
+                padding: '8px 12px',
+                fontSize: 12,
+                color: 'var(--red-hi)',
+              }}
+            >
               ⚠ {loadError}
             </p>
           )}
@@ -114,7 +153,7 @@ export default function PipelineShell({ projectId }: { projectId: string | null 
         onBack={onBack}
         onContinue={onContinue}
       />
-    </main>
+    </div>
   );
 }
 
@@ -198,39 +237,83 @@ function PhaseContent({
 
 function NoProjectEmptyState() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-6">
-      <div className="max-w-md rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
-        <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-brand-pink/10 text-3xl">
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 420,
+          borderRadius: 18,
+          border: '1px solid var(--line)',
+          background: 'var(--bg-2)',
+          padding: 32,
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-md)',
+        }}
+      >
+        <span
+          style={{
+            marginBottom: 16,
+            display: 'inline-flex',
+            height: 56,
+            width: 56,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 14,
+            background: 'var(--blue-soft)',
+            fontSize: 30,
+          }}
+        >
           🎬
         </span>
-        <h1 className="text-xl font-bold text-neutral-900">
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg-1)', margin: 0, fontFamily: 'var(--font-display)' }}>
           El editor necesita un proyecto
         </h1>
-        <p className="mt-2 text-sm text-neutral-500">
-          Crea contenido desde <strong>Scripts</strong>, <strong>Avatar</strong> o
-          subí tus propios clips desde <strong>Edición</strong>.
+        <p style={{ marginTop: 8, fontSize: 14, color: 'var(--fg-3)' }}>
+          Crea contenido desde <strong style={{ color: 'var(--fg-2)' }}>Scripts</strong>,{' '}
+          <strong style={{ color: 'var(--fg-2)' }}>Avatar</strong> o subí tus propios clips desde{' '}
+          <strong style={{ color: 'var(--fg-2)' }}>Edición</strong>.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/scripts"
-            className="rounded-md bg-brand-pink px-4 py-2 text-sm font-bold text-white hover:bg-pink-600"
-          >
+        <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+          <Link href="/scripts" style={primaryLinkStyle}>
             🧠 Ir a Scripts
           </Link>
-          <Link
-            href="/avatar"
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
-          >
+          <Link href="/avatar" style={outlineLinkStyle}>
             🎭 Ir a Avatar
           </Link>
-          <Link
-            href="/editor/manual"
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
-          >
+          <Link href="/editor/manual" style={outlineLinkStyle}>
             📎 Edición desde Clips
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
+
+const primaryLinkStyle: CSSProperties = {
+  borderRadius: 8,
+  background: 'var(--blue)',
+  padding: '8px 16px',
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#fff',
+  textDecoration: 'none',
+  border: '1px solid var(--blue-lo)',
+};
+
+const outlineLinkStyle: CSSProperties = {
+  borderRadius: 8,
+  border: '1px solid var(--line-strong)',
+  background: 'var(--bg-3)',
+  padding: '8px 16px',
+  fontSize: 14,
+  fontWeight: 700,
+  color: 'var(--fg-2)',
+  textDecoration: 'none',
+};

@@ -14,15 +14,15 @@ export default function RegenQueuePanel() {
   const ordered = [...state.jobs].reverse(); // más recientes arriba
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-3 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           Regeneraciones · {state.jobs.length}
         </p>
         <button
           type="button"
           onClick={() => dispatch({ type: 'CLEAR_DONE' })}
-          className="text-[10px] font-semibold text-neutral-500 hover:text-brand-pink"
+          className="text-[10px] font-semibold text-[var(--fg-3)] hover:text-[var(--blue-hi)]"
         >
           Limpiar terminadas
         </button>
@@ -39,10 +39,10 @@ export default function RegenQueuePanel() {
             >
               <span className="text-base leading-none">{meta.emoji}</span>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-neutral-800">
+                <p className="truncate font-semibold text-[var(--fg-1)]">
                   {meta.label} · escena {String(j.sceneNumber).padStart(2, '0')} · {j.sceneName}
                 </p>
-                <p className="truncate text-[10px] text-neutral-500">
+                <p className="truncate text-[10px] text-[var(--fg-3)]">
                   {statusInfo.label}
                   {j.attempts > 1 && ` · intento ${j.attempts}`}
                   {j.message && ` · ${j.message}`}
@@ -54,7 +54,7 @@ export default function RegenQueuePanel() {
                 <button
                   type="button"
                   onClick={() => dispatch({ type: 'CANCEL', jobId: j.id })}
-                  className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                  className="rounded border border-[var(--line-strong)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
                 >
                   Cancelar
                 </button>
@@ -63,7 +63,7 @@ export default function RegenQueuePanel() {
                 <button
                   type="button"
                   onClick={() => dispatch({ type: 'RETRY', jobId: j.id })}
-                  className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 hover:bg-amber-100"
+                  className="rounded border border-[rgba(245,181,68,0.35)] bg-[var(--warning-soft)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--warning)] hover:bg-[var(--warning-soft)]"
                 >
                   Reintentar
                 </button>
@@ -77,9 +77,9 @@ export default function RegenQueuePanel() {
 }
 
 const STATUS_INFO: Record<string, { label: string; cls: string }> = {
-  queued: { label: '⏳ en cola', cls: 'border-neutral-200 bg-neutral-50' },
+  queued: { label: '⏳ en cola', cls: 'border-[var(--line)] bg-[var(--bg-1)]' },
   running: { label: '◌ ejecutando', cls: 'border-blue-200 bg-blue-50' },
-  done: { label: '✓ listo', cls: 'border-emerald-200 bg-emerald-50' },
-  failed: { label: '✗ falló', cls: 'border-red-200 bg-red-50' },
-  cancelled: { label: '— cancelado', cls: 'border-neutral-200 bg-neutral-100' },
+  done: { label: '✓ listo', cls: 'border-[rgba(43,212,164,0.3)] bg-[var(--success-soft)]' },
+  failed: { label: '✗ falló', cls: 'border-[var(--red-ring)] bg-[var(--red-soft)]' },
+  cancelled: { label: '— cancelado', cls: 'border-[var(--line)] bg-[var(--bg-3)]' },
 };

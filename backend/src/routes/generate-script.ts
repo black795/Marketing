@@ -12,6 +12,8 @@ interface GenerateScriptBody {
   sceneCount?: number;
   /** Contexto de dominio (Perfil) ya formateado por el frontend. */
   profileContext?: string;
+  /** Dirección de arte / estética ya formateada por el frontend. */
+  styleContext?: string;
 }
 
 const router = Router();
@@ -25,6 +27,7 @@ router.post('/generate-script', async (req: Request, res: Response) => {
     referenceImages,
     sceneCount,
     profileContext,
+    styleContext,
   } = req.body as GenerateScriptBody;
 
   const refs: string[] = Array.isArray(referenceImages)
@@ -69,6 +72,10 @@ router.post('/generate-script', async (req: Request, res: Response) => {
       profileContext:
         typeof profileContext === 'string' && profileContext.trim().length > 0
           ? profileContext
+          : undefined,
+      styleContext:
+        typeof styleContext === 'string' && styleContext.trim().length > 0
+          ? styleContext
           : undefined,
     });
     console.log(

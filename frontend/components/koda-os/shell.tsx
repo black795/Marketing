@@ -13,9 +13,13 @@ export type PhaseId =
   | 'review'
   | 'scenes'
   | 'storyboard'
+  | 'carousel'
   | 'styles'
   | 'timeline'
   | 'export'
+  | 'editor'
+  | 'library'
+  | 'projects'
   | 'avatar'
   | 'settings';
 
@@ -33,9 +37,16 @@ export const PHASES: Phase[] = [
   { id: 'review', label: 'Revision', short: 'Guion', icon: Icon.Type, path: '/scripts/review' },
   { id: 'scenes', label: 'Escenas', short: 'Imagenes', icon: Icon.Image, path: '/scripts/scenes' },
   { id: 'storyboard', label: 'Video', short: 'Clips', icon: Icon.Film, path: '/storyboard' },
+  { id: 'carousel', label: 'Carrusel', short: 'Slides', icon: Icon.Copy, path: '/carousel' },
   { id: 'styles', label: 'Estilo', short: 'Look', icon: Icon.Flame, path: '/styles' },
   { id: 'timeline', label: 'Timeline', short: 'Video', icon: Icon.Film, path: '/timeline' },
   { id: 'export', label: 'Export', short: 'Render', icon: Icon.Download, path: '/export' },
+];
+
+/** Accesos a lo guardado (no son fases del flujo, viven al pie del rail). */
+export const RAIL_UTILITIES: Phase[] = [
+  { id: 'library', label: 'Biblioteca', short: 'Guardado', icon: Icon.Layers, path: '/library' },
+  { id: 'projects', label: 'Mis proyectos', short: 'Proyectos', icon: Icon.Save, path: '/projects' },
 ];
 
 export const PHASE_ORDER: PhaseId[] = [
@@ -44,6 +55,7 @@ export const PHASE_ORDER: PhaseId[] = [
   'review',
   'scenes',
   'storyboard',
+  'carousel',
   'styles',
   'timeline',
   'export',
@@ -55,9 +67,13 @@ const BREADCRUMBS: Record<PhaseId, string[]> = {
   review: ['Scripts', 'Guion'],
   scenes: ['Scripts', 'Escenas'],
   storyboard: ['Scripts', 'Video'],
+  carousel: ['Scripts', 'Carrusel'],
   styles: ['Scripts', 'Estilo'],
   timeline: ['Scripts', 'Timeline'],
   export: ['Scripts', 'Export'],
+  editor: ['Editor'],
+  library: ['Biblioteca'],
+  projects: ['Mis proyectos'],
   avatar: ['Avatar'],
   settings: ['Configuracion'],
 };
@@ -173,6 +189,53 @@ export function PhaseRail({ currentId }: { currentId: PhaseId }) {
                   }}
                 />
               )}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Utilidades: acceso a lo guardado desde cualquier pantalla. */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          width: '100%',
+          padding: '12px 12px 0',
+          marginTop: 8,
+          borderTop: '1px solid var(--line)',
+        }}
+      >
+        {RAIL_UTILITIES.map((u) => {
+          const active = u.id === currentId;
+          return (
+            <Link
+              key={u.id}
+              href={u.path}
+              title={`${u.label} - ${u.short}`}
+              style={{
+                width: '100%',
+                height: 48,
+                borderRadius: 10,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 3,
+                background: active ? 'var(--blue-soft)' : 'transparent',
+                color: active ? 'var(--blue-hi)' : 'var(--fg-3)',
+                border: active ? '1px solid var(--blue-ring)' : '1px solid transparent',
+                transition: 'all 200ms var(--ease-out)',
+                textDecoration: 'none',
+              }}
+            >
+              <u.icon size={18} />
+              <span
+                className="mono"
+                style={{ fontSize: 8, fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: 0.3 }}
+              >
+                {u.short}
+              </span>
             </Link>
           );
         })}

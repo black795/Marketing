@@ -75,8 +75,8 @@ export default function SharedTimelinePanel({
       <div
         className={`rounded-md px-4 py-3 text-xs ${
           isCaptions
-            ? 'bg-brand-pink/10 text-brand-pink'
-            : 'bg-brand-yellow/40 text-neutral-700'
+            ? 'bg-[var(--blue)]/10 text-[var(--blue-hi)]'
+            : 'bg-brand-yellow/40 text-[var(--fg-2)]'
         }`}
       >
         {isCaptions
@@ -89,7 +89,7 @@ export default function SharedTimelinePanel({
       <div>
         <label
           htmlFor="timeline-project"
-          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-neutral-500"
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--fg-3)]"
         >
           ID del proyecto
         </label>
@@ -103,7 +103,7 @@ export default function SharedTimelinePanel({
               if (e.key === 'Enter') handleLoad();
             }}
             placeholder="Ej: de_los_andes_al_pacifico"
-            className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-brand-pink focus:outline-none focus:ring-1 focus:ring-brand-pink"
+            className="flex-1 rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-2 text-sm text-[var(--fg-1)] focus:border-[var(--blue)] focus:outline-none focus:ring-1 focus:ring-[var(--blue)]"
           />
           <LoadingButton
             variant="primary"
@@ -115,49 +115,49 @@ export default function SharedTimelinePanel({
             Cargar timeline
           </LoadingButton>
         </div>
-        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-xs text-[var(--red-hi)]">{error}</p>}
       </div>
 
       {/* Resumen del timeline */}
       {timeline && (
-        <div className="rounded-lg border border-neutral-200 bg-white">
-          <div className="border-b border-neutral-200 px-4 py-3">
-            <p className="text-sm font-semibold text-neutral-900">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)]">
+          <div className="border-b border-[var(--line)] px-4 py-3">
+            <p className="text-sm font-semibold text-[var(--fg-1)]">
               {timeline.title}
             </p>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-[var(--fg-3)]">
               {timeline.width}×{timeline.height} · {timeline.fps}fps ·{' '}
               {(timeline.durationFrames / timeline.fps).toFixed(1)}s ·{' '}
               fuente: {timeline.metadata.source}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-neutral-200 text-center">
+          <div className="grid grid-cols-3 divide-x divide-[var(--line)] text-center">
             <Stat label="Clips" value={timeline.clips.length} />
             <Stat label="Captions" value={timeline.captions.length} />
             <Stat label="Frames" value={timeline.durationFrames} />
           </div>
 
-          <ol className="max-h-72 divide-y divide-neutral-100 overflow-y-auto">
+          <ol className="max-h-72 divide-y divide-[var(--line)] overflow-y-auto">
             {timeline.clips.map((clip) => {
               const caption = timeline.captions.find(
                 (c) => c.startFrame === clip.startFrame
               );
               return (
                 <li key={clip.id} className="flex gap-3 px-4 py-2.5 text-xs">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-pink text-[10px] font-bold text-white">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--blue)] text-[10px] font-bold text-white">
                     {clip.sceneNumber}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-neutral-700">
+                    <p className="font-semibold text-[var(--fg-2)]">
                       {clip.kind === 'video' ? '🎞️ Video' : '🖼️ Imagen'} ·{' '}
                       {clip.durationFrames} frames · transición:{' '}
                       {clip.transitionIn}
                     </p>
                     {caption && (
-                      <p className="mt-0.5 truncate text-neutral-500">
+                      <p className="mt-0.5 truncate text-[var(--fg-3)]">
                         💬 {caption.text}{' '}
-                        <span className="text-neutral-400">
+                        <span className="text-[var(--fg-4)]">
                           ({caption.words.length} palabras)
                         </span>
                       </p>
@@ -287,12 +287,12 @@ function RenderSection({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-200 px-4 py-3">
-        <p className="text-sm font-semibold text-neutral-900">
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)]">
+      <div className="border-b border-[var(--line)] px-4 py-3">
+        <p className="text-sm font-semibold text-[var(--fg-1)]">
           🎞️ Render del video editado
         </p>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-[var(--fg-3)]">
           Concatena los clips del timeline con ffmpeg y produce un MP4 final.
         </p>
       </div>
@@ -304,12 +304,12 @@ function RenderSection({
             checked={burnCaptions}
             onChange={(e) => setBurnCaptions(e.target.checked)}
             disabled={running || !hasCaptions}
-            className="mt-0.5 accent-brand-pink"
+            className="mt-0.5 accent-[var(--blue)]"
           />
-          <span className={hasCaptions ? 'text-neutral-700' : 'text-neutral-400'}>
+          <span className={hasCaptions ? 'text-[var(--fg-2)]' : 'text-[var(--fg-4)]'}>
             Quemar subtítulos del timeline sobre el video (libass)
             {!hasCaptions && (
-              <span className="ml-1 text-neutral-400">
+              <span className="ml-1 text-[var(--fg-4)]">
                 — el timeline no trae captions
               </span>
             )}
@@ -330,7 +330,7 @@ function RenderSection({
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+              className="rounded-md border border-[var(--line-strong)] px-3 py-2 text-xs font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
             >
               Cancelar
             </button>
@@ -353,17 +353,17 @@ function RenderSection({
         )}
 
         {error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+          <p className="rounded-md bg-[var(--red-soft)] px-3 py-2 text-xs text-[var(--red-hi)]">
             {error}
           </p>
         )}
 
         {lastRender && (
-          <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs font-semibold text-neutral-700">
+          <div className="space-y-2 rounded-md border border-[var(--line)] bg-[var(--bg-1)] p-3">
+            <p className="text-xs font-semibold text-[var(--fg-2)]">
               ✅ Última salida ({new Date(lastRender.renderedAt).toLocaleString()})
             </p>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-[var(--fg-3)]">
               {lastRender.width}×{lastRender.height} · {lastRender.fps}fps ·{' '}
               {lastRender.durationSeconds.toFixed(1)}s · {lastRender.clipCount}{' '}
               clips · captions: {lastRender.burnedCaptions ? 'sí' : 'no'}
@@ -379,7 +379,7 @@ function RenderSection({
               <a
                 href={lastRender.url}
                 download
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-1.5 text-[11px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
               >
                 ⬇ Descargar MP4
               </a>
@@ -387,7 +387,7 @@ function RenderSection({
                 href={lastRender.url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-3 py-1.5 text-[11px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
               >
                 Abrir en nueva pestaña
               </a>
@@ -402,8 +402,8 @@ function RenderSection({
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="px-3 py-3">
-      <p className="text-lg font-bold text-neutral-900">{value}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
+      <p className="text-lg font-bold text-[var(--fg-1)]">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--fg-4)]">
         {label}
       </p>
     </div>

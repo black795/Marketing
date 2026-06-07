@@ -31,9 +31,9 @@ export default function AssetSidebar({ project }: Props) {
   const meta = SIDEBAR_TABS.find((t) => t.id === tab)!;
 
   return (
-    <aside className="flex h-full min-h-0 flex-col bg-white">
+    <aside className="flex h-full min-h-0 flex-col bg-[var(--bg-2)]">
       {/* Tabs */}
-      <div className="border-b border-neutral-200">
+      <div className="border-b border-[var(--line)]">
         <nav
           role="tablist"
           aria-label="Materiales del proyecto"
@@ -49,14 +49,14 @@ export default function AssetSidebar({ project }: Props) {
                 onClick={() => dispatch({ type: 'SET_SIDEBAR_TAB', tab: t.id })}
                 className={`relative flex shrink-0 items-center gap-1 px-3 py-2 text-[11px] font-semibold transition ${
                   active
-                    ? 'text-brand-pink'
-                    : 'text-neutral-500 hover:text-neutral-800'
+                    ? 'text-[var(--blue-hi)]'
+                    : 'text-[var(--fg-3)] hover:text-[var(--fg-1)]'
                 }`}
               >
                 <span>{t.emoji}</span>
                 <span>{t.label}</span>
                 {active && (
-                  <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-brand-pink" />
+                  <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-[var(--blue)]" />
                 )}
               </button>
             );
@@ -67,7 +67,7 @@ export default function AssetSidebar({ project }: Props) {
       {/* Contenido */}
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {materials.length === 0 ? (
-          <p className="rounded-md border border-dashed border-neutral-200 px-3 py-4 text-center text-[11px] text-neutral-400">
+          <p className="rounded-md border border-dashed border-[var(--line)] px-3 py-4 text-center text-[11px] text-[var(--fg-4)]">
             {meta.emptyHint}
           </p>
         ) : (
@@ -79,7 +79,7 @@ export default function AssetSidebar({ project }: Props) {
                   onClick={() =>
                     dispatch({ type: 'SELECT_SCENE', sceneId: m.scene.id })
                   }
-                  className="block w-full overflow-hidden rounded-md border border-neutral-200 bg-white text-left hover:border-brand-pink"
+                  className="block w-full overflow-hidden rounded-md border border-[var(--line)] bg-[var(--bg-2)] text-left hover:border-[var(--blue)]"
                 >
                   <div className="aspect-square w-full bg-neutral-900">
                     {m.preview?.kind === 'video' ? (
@@ -97,16 +97,16 @@ export default function AssetSidebar({ project }: Props) {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-500">
+                      <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--fg-3)]">
                         {tab}
                       </div>
                     )}
                   </div>
-                  <p className="truncate px-1.5 py-1 text-[10px] font-semibold text-neutral-700">
+                  <p className="truncate px-1.5 py-1 text-[10px] font-semibold text-[var(--fg-2)]">
                     {m.label}
                   </p>
                   {m.meta && (
-                    <p className="truncate px-1.5 pb-1 text-[9px] text-neutral-400">
+                    <p className="truncate px-1.5 pb-1 text-[9px] text-[var(--fg-4)]">
                       {m.meta}
                     </p>
                   )}

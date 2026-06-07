@@ -82,7 +82,7 @@ export default function TimelinePanel() {
   const totalContentHeight = RULER_HEIGHT_PX + tracks.length * ROW_HEIGHT_PX;
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-lg border border-neutral-200 bg-white shadow-sm">
+    <div className="flex h-full min-h-0 flex-col rounded-lg border border-[var(--line)] bg-[var(--bg-2)] shadow-sm">
       <TimelineToolbar />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -90,7 +90,7 @@ export default function TimelinePanel() {
         <div className="flex w-[140px] shrink-0 flex-col" style={{ width: HEADER_WIDTH_PX }}>
           {/* Espacio bajo el ruler */}
           <div
-            className="border-b border-r border-neutral-200 bg-neutral-50"
+            className="border-b border-r border-[var(--line)] bg-[var(--bg-1)]"
             style={{ height: RULER_HEIGHT_PX }}
           />
           {tracks.map((kind) => (

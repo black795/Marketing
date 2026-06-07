@@ -35,23 +35,23 @@ export default function ExportPanel() {
 
   return (
     <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-      <section className="min-h-0 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+      <section className="min-h-0 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4 shadow-sm">
         <header className="mb-3">
-          <h2 className="text-sm font-bold text-neutral-900">Plataformas de export</h2>
-          <p className="text-[11px] text-neutral-500">
+          <h2 className="text-sm font-bold text-[var(--fg-1)]">Plataformas de export</h2>
+          <p className="text-[11px] text-[var(--fg-3)]">
             Cada preset re-renderiza con dimensiones, fps, crf y duración máxima
             específicos. El backend cachea segmentos por hash — re-render del
             mismo preset es casi instantáneo.
           </p>
         </header>
 
-        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md bg-neutral-50 p-2.5 text-[11px]">
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md bg-[var(--bg-1)] p-2.5 text-[11px]">
           <label className="flex items-center gap-1.5">
             <input
               type="checkbox"
               checked={burnCaptions}
               onChange={(e) => setBurnCaptions(e.target.checked)}
-              className="accent-brand-pink"
+              className="accent-[var(--blue)]"
             />
             Quemar captions
           </label>
@@ -60,7 +60,7 @@ export default function ExportPanel() {
               type="checkbox"
               checked={force}
               onChange={(e) => setForce(e.target.checked)}
-              className="accent-brand-pink"
+              className="accent-[var(--blue)]"
             />
             Forzar re-render (ignora cache)
           </label>
@@ -72,7 +72,7 @@ export default function ExportPanel() {
               max={8}
               value={parallelism}
               onChange={(e) => setParallelism(Math.max(1, Math.min(8, Number(e.target.value) || 1)))}
-              className="w-12 rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-center font-mono"
+              className="w-12 rounded border border-[var(--line-strong)] bg-[var(--bg-2)] px-1.5 py-0.5 text-center font-mono"
             />
           </label>
         </div>
@@ -91,7 +91,7 @@ export default function ExportPanel() {
                     parallelism,
                   })
                 }
-                className="flex w-full flex-col items-stretch gap-1.5 rounded-md border border-neutral-200 bg-white p-2 text-left hover:border-brand-pink"
+                className="flex w-full flex-col items-stretch gap-1.5 rounded-md border border-[var(--line)] bg-[var(--bg-2)] p-2 text-left hover:border-[var(--blue)]"
               >
                 <div
                   className={`relative ${aspectClassName(p.aspect)} w-full overflow-hidden rounded bg-neutral-900`}
@@ -103,8 +103,8 @@ export default function ExportPanel() {
                     {p.aspect}
                   </span>
                 </div>
-                <p className="truncate text-[11px] font-bold text-neutral-800">{p.label}</p>
-                <p className="text-[10px] text-neutral-500">
+                <p className="truncate text-[11px] font-bold text-[var(--fg-1)]">{p.label}</p>
+                <p className="text-[10px] text-[var(--fg-3)]">
                   {p.width}×{p.height} · {p.fps}fps · crf {p.crf}
                 </p>
               </button>
@@ -113,14 +113,14 @@ export default function ExportPanel() {
         </ul>
       </section>
 
-      <aside className="min-h-0 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+      <aside className="min-h-0 overflow-y-auto rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4 shadow-sm">
         <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-neutral-900">Cola de renders</h2>
+          <h2 className="text-sm font-bold text-[var(--fg-1)]">Cola de renders</h2>
           {state.jobs.length > 0 && (
             <button
               type="button"
               onClick={clearDone}
-              className="text-[10px] font-semibold text-neutral-500 hover:text-brand-pink"
+              className="text-[10px] font-semibold text-[var(--fg-3)] hover:text-[var(--blue-hi)]"
             >
               Limpiar terminados
             </button>
@@ -128,7 +128,7 @@ export default function ExportPanel() {
         </header>
 
         {state.jobs.length === 0 ? (
-          <p className="rounded-md border border-dashed border-neutral-200 px-3 py-4 text-center text-[11px] text-neutral-400">
+          <p className="rounded-md border border-dashed border-[var(--line)] px-3 py-4 text-center text-[11px] text-[var(--fg-4)]">
             Sin renders aún. Click en un preset para empezar.
           </p>
         ) : (
@@ -136,13 +136,13 @@ export default function ExportPanel() {
             {[...state.jobs].reverse().map((j) => (
               <li
                 key={j.id}
-                className="space-y-1 rounded-md border border-neutral-200 bg-white p-2"
+                className="space-y-1 rounded-md border border-[var(--line)] bg-[var(--bg-2)] p-2"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-neutral-800">
+                  <span className="text-[11px] font-bold text-[var(--fg-1)]">
                     {j.presetId ?? 'nativo'}
                   </span>
-                  <span className="text-[10px] text-neutral-500">{j.status}</span>
+                  <span className="text-[10px] text-[var(--fg-3)]">{j.status}</span>
                   {(j.status === 'connecting' ||
                     j.status === 'preparing' ||
                     j.status === 'downloading' ||
@@ -153,17 +153,17 @@ export default function ExportPanel() {
                     <button
                       type="button"
                       onClick={() => cancel(j.id)}
-                      className="ml-auto rounded border border-neutral-300 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                      className="ml-auto rounded border border-[var(--line-strong)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
                     >
                       Cancelar
                     </button>
                   )}
                 </div>
-                <p className="truncate text-[10px] text-neutral-500">{j.message}</p>
+                <p className="truncate text-[10px] text-[var(--fg-3)]">{j.message}</p>
                 {j.progress !== null && (
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-3)]">
                     <span
-                      className="block h-full rounded-full bg-brand-pink transition-[width] duration-300"
+                      className="block h-full rounded-full bg-[var(--blue)] transition-[width] duration-300"
                       style={{ width: `${Math.round((j.progress ?? 0) * 100)}%` }}
                     />
                   </div>
@@ -180,7 +180,7 @@ export default function ExportPanel() {
                       <a
                         href={j.outputUrl}
                         download
-                        className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                        className="rounded border border-[var(--line-strong)] bg-[var(--bg-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
                       >
                         ⬇ Descargar
                       </a>
@@ -188,17 +188,17 @@ export default function ExportPanel() {
                         href={j.outputUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:bg-neutral-50"
+                        className="rounded border border-[var(--line-strong)] bg-[var(--bg-2)] px-2 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:bg-[var(--bg-1)]"
                       >
                         Abrir
                       </a>
                       {typeof j.cacheHits === 'number' && (
-                        <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700">
+                        <span className="rounded bg-[var(--success-soft)] px-1.5 py-0.5 text-[10px] text-[var(--success)]">
                           cache {j.cacheHits}
                         </span>
                       )}
                       {typeof j.durationSeconds === 'number' && (
-                        <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-700">
+                        <span className="rounded bg-[var(--bg-3)] px-1.5 py-0.5 text-[10px] text-[var(--fg-2)]">
                           {j.durationSeconds.toFixed(1)}s
                         </span>
                       )}
@@ -206,7 +206,7 @@ export default function ExportPanel() {
                   </div>
                 )}
                 {j.error && (
-                  <p className="rounded bg-red-50 px-1.5 py-1 text-[10px] text-red-700">
+                  <p className="rounded bg-[var(--red-soft)] px-1.5 py-1 text-[10px] text-[var(--red-hi)]">
                     {j.error}
                   </p>
                 )}

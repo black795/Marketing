@@ -1,4 +1,5 @@
 import PipelineShell from '@/components/editor-pipeline/PipelineShell';
+import { WorkflowShell } from '@/components/koda-os/shell';
 
 /**
  * Editor — pipeline secuencial cinematográfico.
@@ -18,5 +19,9 @@ export default function EditorPage({
   searchParams: { projectId?: string };
 }) {
   const projectId = searchParams.projectId ?? null;
-  return <PipelineShell projectId={projectId} />;
+  return (
+    <WorkflowShell phase="editor" showCommandBar={false}>
+      <PipelineShell projectId={projectId} />
+    </WorkflowShell>
+  );
 }

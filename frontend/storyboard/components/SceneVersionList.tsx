@@ -21,7 +21,7 @@ export default function SceneVersionList({ scene }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           Historial · {versions.length + 1} versión{versions.length === 0 ? '' : 'es'}
         </p>
         <button
@@ -34,7 +34,7 @@ export default function SceneVersionList({ scene }: Props) {
               label: `Checkpoint ${new Date().toLocaleTimeString()}`,
             })
           }
-          className="text-[11px] font-semibold text-brand-pink hover:underline"
+          className="text-[11px] font-semibold text-[var(--blue-hi)] hover:underline"
         >
           + Guardar versión
         </button>
@@ -42,14 +42,14 @@ export default function SceneVersionList({ scene }: Props) {
 
       <ol className="space-y-1">
         {/* Versión actual */}
-        <li className="flex items-center gap-2 rounded-md border border-brand-pink/40 bg-brand-pink/5 px-2.5 py-1.5">
-          <span className="rounded bg-brand-pink px-1.5 py-0.5 text-[9px] font-bold text-white">
+        <li className="flex items-center gap-2 rounded-md border border-[var(--blue)]/40 bg-[var(--blue)]/5 px-2.5 py-1.5">
+          <span className="rounded bg-[var(--blue)] px-1.5 py-0.5 text-[9px] font-bold text-white">
             v{versions.length + 1}
           </span>
-          <span className="flex-1 truncate text-[11px] font-semibold text-neutral-700">
+          <span className="flex-1 truncate text-[11px] font-semibold text-[var(--fg-2)]">
             Actual
           </span>
-          <span className="text-[10px] text-neutral-400">
+          <span className="text-[10px] text-[var(--fg-4)]">
             {scene.assets.length} asset{scene.assets.length === 1 ? '' : 's'}
           </span>
         </li>
@@ -60,16 +60,16 @@ export default function SceneVersionList({ scene }: Props) {
           return (
             <li
               key={v.id}
-              className="flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5"
+              className="flex items-center gap-2 rounded-md border border-[var(--line)] bg-[var(--bg-2)] px-2.5 py-1.5"
             >
-              <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[9px] font-bold text-neutral-700">
+              <span className="rounded bg-[var(--bg-3)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--fg-2)]">
                 v{versionNumber}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-semibold text-neutral-700">
+                <p className="truncate text-[11px] font-semibold text-[var(--fg-2)]">
                   {v.label ?? v.reason}
                 </p>
-                <p className="text-[9px] text-neutral-400">
+                <p className="text-[9px] text-[var(--fg-4)]">
                   {new Date(v.createdAt).toLocaleString()} · {v.reason}
                 </p>
               </div>
@@ -82,7 +82,7 @@ export default function SceneVersionList({ scene }: Props) {
                     versionId: v.id,
                   })
                 }
-                className="rounded-md border border-neutral-300 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+                className="rounded-md border border-[var(--line-strong)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
               >
                 Revertir
               </button>
@@ -91,7 +91,7 @@ export default function SceneVersionList({ scene }: Props) {
         })}
 
         {versions.length === 0 && (
-          <li className="rounded-md border border-dashed border-neutral-200 px-2.5 py-2 text-[11px] text-neutral-400">
+          <li className="rounded-md border border-dashed border-[var(--line)] px-2.5 py-2 text-[11px] text-[var(--fg-4)]">
             Aún no hay versiones anteriores. Cada edición o regen crea una.
           </li>
         )}

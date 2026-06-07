@@ -19,6 +19,13 @@ import avatarRegistryRouter from './routes/avatar-registry';
 import profilesRouter from './routes/profiles';
 import sandboxRouter from './routes/sandbox';
 import autoRouter from './routes/auto';
+import carouselRouter from './routes/carousel';
+import carouselPromptsRouter from './routes/carousel-prompts';
+import carouselImagesRouter from './routes/carousel-images';
+import visualStylesRouter from './routes/visual-styles';
+import scriptLibraryRouter from './routes/script-library';
+import enhancePromptRouter from './routes/enhance-prompt';
+import projectLibraryRouter from './routes/project-library';
 import { checkWorkerHealth } from './services/python-worker/imageWorker';
 import { createLogger, newId } from './services/logger';
 import { metrics, recordStatus, snapshotMetrics } from './services/metrics';
@@ -156,6 +163,13 @@ app.use('/api', avatarRegistryRouter);
 app.use('/api', profilesRouter);
 app.use('/api', sandboxRouter);
 app.use('/api', autoRouter);
+app.use('/api', carouselRouter);
+app.use('/api', carouselPromptsRouter);
+app.use('/api', carouselImagesRouter);
+app.use('/api', visualStylesRouter);
+app.use('/api', scriptLibraryRouter);
+app.use('/api', enhancePromptRouter);
+app.use('/api', projectLibraryRouter);
 
 // 404 — ninguna ruta coincidió.
 app.use((req, res) => {

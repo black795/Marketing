@@ -14,8 +14,14 @@ import {
 } from '../primitives';
 import { projectStore, useProject } from '../project-store';
 import { generateScript } from '@/lib/api';
-import { fetchProfiles, addProfileExample, buildProfileContext } from '@/lib/profiles';
+import { fetchProfiles, addProfileExample } from '@/lib/profiles';
+import { fetchVisualStyles, markVisualStyleUsed } from '@/lib/visual-styles';
+import { fetchFavoriteScripts, createFavoriteScript, markFavoriteScriptUsed } from '@/lib/script-library';
+import { buildScriptGenerationContext } from '@/lib/script-context';
+import SaveProjectButton from '../SaveProjectButton';
 import type { Profile } from '@/types/profile';
+import type { VisualStyle } from '@/types/visual-style';
+import type { FavoriteScript } from '@/types/script-favorite';
 import type { Scene } from '@/types/story';
 
 const chipBtn: CSSProperties = {
@@ -37,12 +43,22 @@ const chipBtn: CSSProperties = {
 
 export default function ReviewScreen() {
   const router = useRouter();
-  const { script, scriptApproved, form, profileId } = useProject();
+  const { script, scriptApproved, form, profileId, scriptAestheticId, scriptStyleId, favoriteScriptIds, scenes: projectScenes } =
+    useProject();
   const [active, setActive] = useState(0);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [scriptSaved, setScriptSaved] = useState(false);
+  const [visualStyles, setVisualStyles] = useState<VisualStyle[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteScript[]>([]);
+  const [favSaved, setFavSaved] = useState(false);
+  const [includeFavImages, setIncludeFavImages] = useState(true);
+
+  // Imágenes de escenas disponibles (para guardarlas con el favorito).
+  const favImages = (projectScenes ?? [])
+    .map((s) => s.image_url)
+    .filter((u): u is string => typeof u === 'string' && u.length > 0);
 
   useEffect(() => {
     if (!profileId) {
@@ -53,6 +69,43 @@ export default function ReviewScreen() {
       .then((reg) => setProfile(reg.profiles.find((p) => p.id === profileId) ?? null))
       .catch(() => setProfile(null));
   }, [profileId]);
+
+  useEffect(() => {
+    fetchVisualStyles().then((reg) => setVisualStyles(reg.styles)).catch(() => {});
+    fetchFavoriteScripts().then((reg) => setFavorites(reg.scripts)).catch(() => {});
+  }, []);
+
+  const selectedStyle = visualStyles.find((s) => s.id === scriptStyleId) ?? null;
+  const selectedFavorites = favorites.filter((f) => favoriteScriptIds.includes(f.id));
+
+  async function saveScriptToFavorites() {
+    if (!script) return;
+    const summary = [
+      script.style ? `Estilo: ${script.style}` : '',
+      script.scenes
+        .map((s) => s.narration)
+        .filter(Boolean)
+        .join(' ')
+        .slice(0, 1200),
+    ]
+      .filter(Boolean)
+      .join('\n');
+    try {
+      const fav = await createFavoriteScript({
+        title: script.title,
+        style: script.style,
+        summary,
+        sourcePrompt: form.visualPrompt,
+        sceneCount: script.scenes.length,
+        images: includeFavImages && favImages.length > 0 ? favImages : undefined,
+      });
+      setFavorites((prev) => [fav, ...prev]);
+      setFavSaved(true);
+      setTimeout(() => setFavSaved(false), 1500);
+    } catch {
+      /* no bloquea el flujo */
+    }
+  }
 
   async function saveScriptToProfile() {
     if (!profile || !script) return;
@@ -104,14 +157,23 @@ export default function ReviewScreen() {
     setError(null);
     try {
       const refDataUrls = form.references.map((r) => r.dataUrl);
+      const { profileContext, styleContext } = buildScriptGenerationContext({
+        profile,
+        aestheticId: scriptAestheticId,
+        savedStyle: selectedStyle,
+        favorites: selectedFavorites,
+      });
       const next = await generateScript({
         visualPrompt: form.visualPrompt,
         narrativePrompt: form.narrativePrompt || undefined,
         model: form.model,
         referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
         sceneCount: form.settings.sceneCount,
-        profileContext: profile ? buildProfileContext(profile) : undefined,
+        profileContext,
+        styleContext,
       });
+      if (selectedStyle) markVisualStyleUsed(selectedStyle.id).catch(() => {});
+      selectedFavorites.forEach((f) => markFavoriteScriptUsed(f.id).catch(() => {}));
       projectStore.setScript(next);
       setActive(0);
     } catch (err) {
@@ -149,6 +211,40 @@ export default function ReviewScreen() {
         subtitle={script.style || form.visualPrompt.slice(0, 140)}
         actions={
           <>
+            <SaveProjectButton />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Button
+                variant="secondary"
+                size="md"
+                icon={Icon.Star}
+                onClick={saveScriptToFavorites}
+                title="Guardar este guion en tu biblioteca de favoritos (reutilizable en cualquier proyecto)"
+              >
+                {favSaved ? 'En favoritos ✓' : 'Guardar en favoritos'}
+              </Button>
+              {favImages.length > 0 && (
+                <label
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    color: 'var(--fg-3)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                    paddingLeft: 2,
+                  }}
+                  title="Si lo desmarcás, se guarda solo el texto del guion (más liviano)."
+                >
+                  <input
+                    type="checkbox"
+                    checked={includeFavImages}
+                    onChange={(e) => setIncludeFavImages(e.target.checked)}
+                  />
+                  Incluir {favImages.length} {favImages.length === 1 ? 'imagen' : 'imágenes'}
+                </label>
+              )}
+            </div>
             {profile && (
               <Button
                 variant="secondary"

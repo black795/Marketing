@@ -40,6 +40,8 @@ router = APIRouter()
 MODEL_NAME_MAP: dict[str, str] = {
     "nano-banana-pro": "nano_banana_pro",
     "chatgpt-image-2": "gpt_image_2",
+    # Alias: el generador de carruseles llama al modelo "gpt-image-2".
+    "gpt-image-2": "gpt_image_2",
 }
 
 NOT_YET_IMPLEMENTED = {"nano-banana-2"}
@@ -72,11 +74,10 @@ GPT_IMAGE_QUALITY_MAP: dict[str, dict[str, Any]] = {
     "ultra": {"quality": "high", "output_compression": 100, "output_format": "png"},
 }
 
-# gpt-image-2 no soporta 4:5 ni match_input_image. Mapeamos al más cercano.
-GPT_IMAGE_ASPECT_FALLBACK: dict[str, str] = {
-    "4:5": "3:4",
-    "match_input_image": "1:1",
-}
+# gpt-image-2 SOLO acepta estos aspect ratios (validado por la API de Replicate;
+# cualquier otro devuelve 422 "Input validation failed"). Mapeamos por
+# orientación al válido más cercano: portrait→2:3, landscape→3:2, square→1:1.
+GPT_IMAGE_VALID_ASPECTS: frozenset[str] = frozenset({"1:1", "3:2", "2:3"})
 
 
 def _resolve_quality_kwargs(py_name: str, quality: str) -> dict[str, Any]:
@@ -92,9 +93,19 @@ def _resolve_quality_kwargs(py_name: str, quality: str) -> dict[str, Any]:
 
 def _resolve_aspect_ratio(py_name: str, aspect_ratio: str) -> str:
     """Algunos modelos no soportan todos los aspect ratios. Mapeamos al más cercano."""
-    if py_name == "gpt_image_2":
-        return GPT_IMAGE_ASPECT_FALLBACK.get(aspect_ratio, aspect_ratio)
-    return aspect_ratio
+    if py_name != "gpt_image_2":
+        return aspect_ratio
+    if aspect_ratio in GPT_IMAGE_VALID_ASPECTS:
+        return aspect_ratio
+    # Ratios no soportados (4:5, 9:16, 16:9, match_input_image, …) → el válido
+    # más cercano por orientación.
+    try:
+        a, b = (float(x) for x in aspect_ratio.split(":"))
+    except (ValueError, TypeError):
+        return "1:1"  # "match_input_image" u otros no numéricos → cuadrado
+    if a == b:
+        return "1:1"
+    return "3:2" if a > b else "2:3"
 
 DATA_URL_PATTERN = re.compile(r"^data:(?P<mime>image/[a-zA-Z0-9.+-]+);base64,(?P<data>.+)$")
 

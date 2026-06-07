@@ -13,12 +13,21 @@ import { toAbsoluteAsset, fetchRegistry } from '@/lib/avatar-registry';
 import type { Avatar } from '@/types/avatar-registry';
 import {
   fetchProfiles,
-  buildProfileContext,
   markProfileUsed,
   addProfileExample,
 } from '@/lib/profiles';
 import type { Profile } from '@/types/profile';
 import { generateScript } from '@/lib/api';
+import AestheticPicker from '../AestheticPicker';
+import StyleCreatorModal from '../StyleCreatorModal';
+import StylePicker from '@/components/carousel/StylePicker';
+import { fetchVisualStyles, markVisualStyleUsed } from '@/lib/visual-styles';
+import { fetchFavoriteScripts, markFavoriteScriptUsed } from '@/lib/script-library';
+import { buildScriptGenerationContext } from '@/lib/script-context';
+import { getAestheticPreset } from '@/types/aesthetic';
+import { enhancePrompt } from '@/lib/enhance-prompt';
+import type { VisualStyle } from '@/types/visual-style';
+import type { FavoriteScript } from '@/types/script-favorite';
 import {
   SCENE_COUNT_OPTIONS,
   ASPECT_RATIO_OPTIONS,
@@ -137,7 +146,8 @@ const chipBtn: CSSProperties = {
 
 export default function PromptScreen() {
   const router = useRouter();
-  const { form } = useProject();
+  const project = useProject();
+  const { form, scriptAestheticId, scriptStyleId, favoriteScriptIds } = project;
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -145,8 +155,12 @@ export default function PromptScreen() {
     () => projectStore.get().profileId ?? '',
   );
   const [avatars, setAvatars] = useState<Avatar[]>([]);
+  const [visualStyles, setVisualStyles] = useState<VisualStyle[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteScript[]>([]);
   const [exampleSaved, setExampleSaved] = useState(false);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
+  const [styleCreatorOpen, setStyleCreatorOpen] = useState(false);
+  const [stylePickerKey, setStylePickerKey] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const openFilePicker = () => fileInputRef.current?.click();
 
@@ -157,9 +171,20 @@ export default function PromptScreen() {
     fetchRegistry()
       .then((reg) => setAvatars(reg.avatars))
       .catch(() => {});
+    fetchVisualStyles()
+      .then((reg) => setVisualStyles(reg.styles))
+      .catch(() => {});
+    fetchFavoriteScripts()
+      .then((reg) => setFavorites(reg.scripts))
+      .catch(() => {});
   }, []);
 
   const selectedProfile = profiles.find((p) => p.id === selectedProfileId) ?? null;
+  const selectedStyle = visualStyles.find((s) => s.id === scriptStyleId) ?? null;
+  const selectedFavorites = favorites.filter((f) => favoriteScriptIds.includes(f.id));
+  const generatedExamples = (project.scenes ?? [])
+    .filter((s) => s.image_url)
+    .map((s) => ({ url: s.image_url as string, label: `SC${String(s.scene_number).padStart(2, '0')}` }));
 
   function selectProfile(id: string) {
     setSelectedProfileId(id);
@@ -203,15 +228,24 @@ export default function PromptScreen() {
     setGenerating(true);
     try {
       const refDataUrls = form.references.map((r) => r.dataUrl);
+      const { profileContext, styleContext } = buildScriptGenerationContext({
+        profile: selectedProfile,
+        aestheticId: scriptAestheticId,
+        savedStyle: selectedStyle,
+        favorites: selectedFavorites,
+      });
       const script = await generateScript({
         visualPrompt,
         narrativePrompt: form.narrativePrompt.trim() || undefined,
         model: form.model,
         referenceImages: refDataUrls.length > 0 ? refDataUrls : undefined,
         sceneCount: form.settings.sceneCount,
-        profileContext: selectedProfile ? buildProfileContext(selectedProfile) : undefined,
+        profileContext,
+        styleContext,
       });
       if (selectedProfile) markProfileUsed(selectedProfile.id).catch(() => {});
+      if (selectedStyle) markVisualStyleUsed(selectedStyle.id).catch(() => {});
+      selectedFavorites.forEach((f) => markFavoriteScriptUsed(f.id).catch(() => {}));
       projectStore.setScript(script);
       router.push('/scripts/review');
     } catch (err) {
@@ -257,6 +291,8 @@ export default function PromptScreen() {
               value={form.visualPrompt}
               onChange={(v) => projectStore.setForm({ visualPrompt: v })}
               onOpenRefs={openFilePicker}
+              kind="visual"
+              aestheticId={scriptAestheticId}
             />
           </Card>
 
@@ -281,6 +317,8 @@ export default function PromptScreen() {
               value={form.narrativePrompt}
               onChange={(v) => projectStore.setForm({ narrativePrompt: v })}
               onOpenRefs={openFilePicker}
+              kind="narrative"
+              aestheticId={scriptAestheticId}
             />
           </Card>
 
@@ -402,6 +440,167 @@ export default function PromptScreen() {
                   </button>
                 )}
               </>
+            )}
+          </Card>
+
+          <Card padding={20}>
+            <div className="mono upper" style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 12 }}>
+              Estilo visual
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--fg-3)', margin: '0 0 10px', lineHeight: 1.45 }}>
+              Elegí una estética. Se aplica al look de cada imagen del guion.
+            </p>
+            <AestheticPicker
+              selectedId={scriptAestheticId}
+              onSelect={(id) => projectStore.set({ scriptAestheticId: id })}
+              compact
+            />
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--line)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span className="mono upper" style={{ fontSize: 10, color: 'var(--fg-3)' }}>
+                  Mis estilos
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStyleCreatorOpen(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: 'var(--bg-3)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: 'var(--blue-hi)',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                  title="Crear un estilo con imágenes referenciales (subidas o generadas)"
+                >
+                  <Icon.Plus size={11} /> Nuevo estilo
+                </button>
+              </div>
+              <StylePicker
+                key={stylePickerKey}
+                selectedId={scriptStyleId}
+                onApply={(s) => projectStore.set({ scriptStyleId: s.id })}
+                onClear={() => projectStore.set({ scriptStyleId: null })}
+              />
+            </div>
+          </Card>
+
+          <StyleCreatorModal
+            open={styleCreatorOpen}
+            onClose={() => setStyleCreatorOpen(false)}
+            generatedImages={generatedExamples}
+            onCreated={(style) => {
+              setVisualStyles((prev) => [style, ...prev]);
+              setStylePickerKey((k) => k + 1);
+              projectStore.set({ scriptStyleId: style.id });
+            }}
+          />
+
+          <Card padding={20}>
+            <div
+              className="mono upper"
+              style={{
+                fontSize: 11,
+                color: 'var(--fg-3)',
+                marginBottom: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>Guiones favoritos</span>
+              {favorites.length > 0 && (
+                <span style={{ color: 'var(--blue-hi)' }}>{selectedFavorites.length} usando</span>
+              )}
+            </div>
+            {favorites.length === 0 ? (
+              <p style={{ fontSize: 11, color: 'var(--fg-3)', margin: 0, lineHeight: 1.5 }}>
+                Cuando apruebes un guion que te guste, guardalo en favoritos desde la revisión.
+                Después se reusan acá como referencia de tono y estructura.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {favorites.map((f) => {
+                  const on = favoriteScriptIds.includes(f.id);
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() =>
+                        projectStore.set({
+                          favoriteScriptIds: on
+                            ? favoriteScriptIds.filter((id) => id !== f.id)
+                            : [...favoriteScriptIds, f.id],
+                        })
+                      }
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        background: on ? 'var(--blue-soft)' : 'var(--bg-1)',
+                        border: `1px solid ${on ? 'var(--blue-ring)' : 'var(--line)'}`,
+                        transition: 'all 160ms',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 5,
+                          flexShrink: 0,
+                          display: 'grid',
+                          placeItems: 'center',
+                          background: on ? 'var(--blue)' : 'transparent',
+                          border: `1px solid ${on ? 'var(--blue)' : 'var(--line-strong)'}`,
+                          color: '#fff',
+                        }}
+                      >
+                        {on && <Icon.Check size={10} />}
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: on ? 'var(--blue-hi)' : 'var(--fg-1)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {f.name}
+                        </span>
+                        {f.style && (
+                          <span
+                            className="mono"
+                            style={{
+                              display: 'block',
+                              fontSize: 9.5,
+                              color: 'var(--fg-3)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {f.style}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </Card>
 
@@ -736,12 +935,35 @@ function PromptToolbar({
   value,
   onChange,
   onOpenRefs,
+  kind,
+  aestheticId,
 }: {
   refCount: number;
   value: string;
   onChange: (v: string) => void;
   onOpenRefs: () => void;
+  kind: 'visual' | 'narrative';
+  aestheticId?: string | null;
 }) {
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+
+  async function onEnhance() {
+    if (enhancing || !value.trim()) return;
+    setEnhancing(true);
+    setEnhanceError(null);
+    try {
+      const directive = getAestheticPreset(aestheticId)?.directive;
+      const improved = await enhancePrompt(value, kind, directive);
+      onChange(improved);
+    } catch (err) {
+      setEnhanceError(err instanceof Error ? err.message : 'No se pudo mejorar');
+      setTimeout(() => setEnhanceError(null), 2500);
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
   return (
     <div
       style={{
@@ -753,14 +975,29 @@ function PromptToolbar({
         borderTop: '1px dashed var(--line)',
       }}
     >
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
         <VoiceChip value={value} onChange={onChange} />
         <button type="button" style={chipBtn} onClick={onOpenRefs} title="Subir referencias">
           <Icon.At size={12} /> {refCount} refs
         </button>
-        <button type="button" style={{ ...chipBtn, opacity: 0.5, cursor: 'not-allowed' }} disabled title="Proximamente">
-          <Icon.Sparkles size={12} /> Mejorar
+        <button
+          type="button"
+          style={{
+            ...chipBtn,
+            opacity: !value.trim() || enhancing ? 0.5 : 1,
+            cursor: !value.trim() || enhancing ? 'not-allowed' : 'pointer',
+            color: enhancing ? 'var(--blue-hi)' : 'var(--fg-2)',
+            borderColor: enhancing ? 'var(--blue-ring)' : 'var(--line)',
+          }}
+          disabled={!value.trim() || enhancing}
+          onClick={onEnhance}
+          title="Reescribir el prompt más específico con IA"
+        >
+          <Icon.Sparkles size={12} /> {enhancing ? 'Mejorando…' : 'Mejorar'}
         </button>
+        {enhanceError && (
+          <span style={{ fontSize: 10, color: 'var(--red-hi)' }}>{enhanceError}</span>
+        )}
       </div>
       <span style={{ fontSize: 11, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>
         <Kbd>@</Kbd> menciona refs

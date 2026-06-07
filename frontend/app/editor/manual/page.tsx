@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { uploadClip } from '@/lib/clips-api';
 import { buildTimeline } from '@/lib/captions-api';
 import Link from 'next/link';
+import { WorkflowShell } from '@/components/koda-os/shell';
 
 export default function ManualProjectPage() {
   const router = useRouter();
@@ -145,172 +146,174 @@ export default function ManualProjectPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-50 px-6 py-12">
-      <div className="mx-auto max-w-2xl">
-        <header className="mb-8">
-          <Link href="/" className="mb-4 inline-block text-sm font-semibold text-neutral-500 hover:text-brand-pink">
-            ← Volver al inicio
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Edición Manual
-          </h1>
-          <p className="mt-2 text-neutral-500">
-            Sube tus propios clips de video o imágenes para armar un proyecto desde cero y editarlo en el pipeline.
-          </p>
-        </header>
-
-        <section className="space-y-6 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-          
-          <div
-            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 py-12 text-center transition hover:border-brand-pink hover:bg-pink-50"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-          >
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-            />
-            <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-2xl shadow-sm">
-              📁
-            </span>
-            <p className="font-semibold text-neutral-700">Arrastra archivos aquí o haz clic para subir</p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Soporta MP4, MOV, WebM, JPEG, PNG, WEBP (Max 100MB por archivo)
+    <WorkflowShell phase="editor" showCommandBar={false}>
+      <div className="px-6 py-12">
+        <div className="mx-auto max-w-2xl">
+          <header className="mb-8">
+            <Link href="/" className="mb-4 inline-block text-sm font-semibold text-[var(--fg-3)] hover:text-[var(--blue-hi)]">
+              ← Volver al inicio
+            </Link>
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--fg-1)]">
+              Edición Manual
+            </h1>
+            <p className="mt-2 text-[var(--fg-3)]">
+              Sube tus propios clips de video o imágenes para armar un proyecto desde cero y editarlo en el pipeline.
             </p>
-          </div>
+          </header>
 
-          {files.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-neutral-900">
-                  Archivos seleccionados ({files.length})
-                </h3>
-                {!uploading && (
-                  <button
-                    onClick={() => setFiles([])}
-                    className="text-xs font-semibold text-neutral-500 hover:text-red-500"
-                  >
-                    Vaciar todo
-                  </button>
-                )}
-              </div>
-              <ul className="grid max-h-[28rem] grid-cols-2 gap-3 overflow-y-auto rounded-md border border-neutral-200 bg-neutral-50 p-3 md:grid-cols-3">
-                {previews.map(({ file, url }, i) => {
-                  const isImage = file.type.startsWith('image/');
-                  return (
-                    <li
-                      key={`${file.name}-${i}`}
-                      className="group relative flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm"
-                    >
-                      <div className="relative aspect-video w-full bg-black">
-                        {isImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={url}
-                            alt={file.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={url}
-                            controls
-                            muted
-                            playsInline
-                            preload="auto"
-                            onLoadedMetadata={(e) => {
-                              const v = e.currentTarget;
-                              try {
-                                v.currentTime = Math.min(0.1, (v.duration || 1) / 2);
-                              } catch {}
-                            }}
-                            className="h-full w-full object-cover"
-                          />
-                        )}
-                        <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                          {isImage ? 'IMG' : 'VIDEO'} · {i + 1}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-neutral-700" title={file.name}>
-                            {file.name}
-                          </p>
-                          <p className="text-[10px] text-neutral-400">
-                            {(file.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        {!uploading && (
-                          <div className="flex shrink-0 items-center gap-0.5">
-                            <button
-                              onClick={() => moveFile(i, -1)}
-                              disabled={i === 0}
-                              className="p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-30"
-                              title="Mover arriba"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              onClick={() => moveFile(i, 1)}
-                              disabled={i === files.length - 1}
-                              className="p-1 text-neutral-400 hover:text-neutral-900 disabled:opacity-30"
-                              title="Mover abajo"
-                            >
-                              ↓
-                            </button>
-                            <button
-                              onClick={() => removeFile(i)}
-                              className="p-1 text-neutral-400 hover:text-red-500"
-                              title="Eliminar"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+          <section className="space-y-6 rounded-2xl border border-[var(--line)] bg-[var(--bg-2)] p-8">
 
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {uploading && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-neutral-600">
-                <span>Subiendo archivos y preparando proyecto...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-100">
-                <div
-                  className="h-full bg-brand-pink transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4 border-t border-neutral-100">
-            <button
-              onClick={handleStartProject}
-              disabled={uploading || files.length === 0}
-              className="rounded-md bg-brand-pink px-6 py-2.5 font-bold text-white transition hover:bg-pink-600 disabled:opacity-50"
+            <div
+              className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--line-strong)] bg-[var(--bg-1)] py-12 text-center transition hover:border-[var(--blue)] hover:bg-[var(--blue-soft)]"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
             >
-              {uploading ? 'Procesando...' : 'Crear Proyecto y Editar →'}
-            </button>
-          </div>
-        </section>
+              <input
+                type="file"
+                multiple
+                className="hidden"
+                accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+              />
+              <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-3)] text-2xl">
+                📁
+              </span>
+              <p className="font-semibold text-[var(--fg-2)]">Arrastra archivos aquí o haz clic para subir</p>
+              <p className="mt-1 text-xs text-[var(--fg-3)]">
+                Soporta MP4, MOV, WebM, JPEG, PNG, WEBP (Max 100MB por archivo)
+              </p>
+            </div>
+
+            {files.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-[var(--fg-1)]">
+                    Archivos seleccionados ({files.length})
+                  </h3>
+                  {!uploading && (
+                    <button
+                      onClick={() => setFiles([])}
+                      className="text-xs font-semibold text-[var(--fg-3)] hover:text-[var(--red-hi)]"
+                    >
+                      Vaciar todo
+                    </button>
+                  )}
+                </div>
+                <ul className="grid max-h-[28rem] grid-cols-2 gap-3 overflow-y-auto rounded-md border border-[var(--line)] bg-[var(--bg-1)] p-3 md:grid-cols-3">
+                  {previews.map(({ file, url }, i) => {
+                    const isImage = file.type.startsWith('image/');
+                    return (
+                      <li
+                        key={`${file.name}-${i}`}
+                        className="group relative flex flex-col overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-2)]"
+                      >
+                        <div className="relative aspect-video w-full bg-black">
+                          {isImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={url}
+                              alt={file.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={url}
+                              controls
+                              muted
+                              playsInline
+                              preload="auto"
+                              onLoadedMetadata={(e) => {
+                                const v = e.currentTarget;
+                                try {
+                                  v.currentTime = Math.min(0.1, (v.duration || 1) / 2);
+                                } catch {}
+                              }}
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                          <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            {isImage ? 'IMG' : 'VIDEO'} · {i + 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-[var(--fg-2)]" title={file.name}>
+                              {file.name}
+                            </p>
+                            <p className="text-[10px] text-[var(--fg-4)]">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          {!uploading && (
+                            <div className="flex shrink-0 items-center gap-0.5">
+                              <button
+                                onClick={() => moveFile(i, -1)}
+                                disabled={i === 0}
+                                className="p-1 text-[var(--fg-4)] hover:text-[var(--fg-1)] disabled:opacity-30"
+                                title="Mover arriba"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                onClick={() => moveFile(i, 1)}
+                                disabled={i === files.length - 1}
+                                className="p-1 text-[var(--fg-4)] hover:text-[var(--fg-1)] disabled:opacity-30"
+                                title="Mover abajo"
+                              >
+                                ↓
+                              </button>
+                              <button
+                                onClick={() => removeFile(i)}
+                                className="p-1 text-[var(--fg-4)] hover:text-[var(--red-hi)]"
+                                title="Eliminar"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-md bg-[var(--red-soft)] p-3 text-sm text-[var(--red-hi)]">
+                {error}
+              </div>
+            )}
+
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-[var(--fg-2)]">
+                  <span>Subiendo archivos y preparando proyecto...</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--bg-3)]">
+                  <div
+                    className="h-full bg-[var(--blue)] transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4 border-t border-[var(--line)]">
+              <button
+                onClick={handleStartProject}
+                disabled={uploading || files.length === 0}
+                className="rounded-md bg-[var(--blue)] px-6 py-2.5 font-bold text-white transition hover:bg-[var(--blue-lo)] disabled:opacity-50"
+              >
+                {uploading ? 'Procesando...' : 'Crear Proyecto y Editar →'}
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
-    </main>
+    </WorkflowShell>
   );
 }

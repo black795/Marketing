@@ -19,9 +19,9 @@ export default function Playhead({ heightPx }: Props) {
       className="pointer-events-none absolute top-0 z-20"
       style={{ left: xPx, height: heightPx }}
     >
-      <div className="h-full w-[2px] bg-red-500" />
-      <div className="absolute -left-1.5 top-0 h-3 w-3 rotate-45 bg-red-500" />
-      <span className="absolute top-3.5 left-1.5 rounded bg-red-500 px-1.5 py-0.5 font-mono text-[9px] font-bold text-white">
+      <div className="h-full w-[2px] bg-[var(--red)]" />
+      <div className="absolute -left-1.5 top-0 h-3 w-3 rotate-45 bg-[var(--red)]" />
+      <span className="absolute top-3.5 left-1.5 rounded bg-[var(--red)] px-1.5 py-0.5 font-mono text-[9px] font-bold text-white">
         {framesToMmSs(ui.playheadFrame, sb.project.renderConfig.fps)}
       </span>
     </div>

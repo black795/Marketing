@@ -35,25 +35,65 @@ export default function PipelineFooter({
   continueLabel = 'Continuar →',
 }: Props) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-neutral-200 bg-white/95 backdrop-blur shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-3">
+    <div
+      style={{
+        position: 'sticky',
+        bottom: 0,
+        zIndex: 20,
+        borderTop: '1px solid var(--line)',
+        background: 'var(--bg-overlay)',
+        backdropFilter: 'blur(8px)',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 24px',
+        }}
+      >
         <button
           type="button"
           onClick={onBack}
           disabled={!prev}
-          className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:border-brand-pink hover:text-brand-pink disabled:cursor-not-allowed disabled:opacity-50"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            borderRadius: 8,
+            border: '1px solid var(--line-strong)',
+            background: 'var(--bg-3)',
+            padding: '6px 12px',
+            fontSize: 12,
+            fontWeight: 600,
+            color: prev ? 'var(--fg-2)' : 'var(--fg-4)',
+            cursor: prev ? 'pointer' : 'not-allowed',
+            opacity: prev ? 1 : 0.5,
+          }}
         >
           ← Atrás
         </button>
         <SaveIndicator status={saveStatus} />
-        <span className="ml-auto text-[11px] text-neutral-500">
-          Fase actual: <strong className="text-neutral-800">{current}</strong>
+        <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-3)' }}>
+          Fase actual: <strong style={{ color: 'var(--fg-1)' }}>{current}</strong>
         </span>
         {onSkip && (
           <button
             type="button"
             onClick={onSkip}
-            className="rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-500 hover:border-neutral-400 hover:text-neutral-700"
+            style={{
+              borderRadius: 8,
+              border: '1px solid var(--line)',
+              background: 'transparent',
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--fg-3)',
+              cursor: 'pointer',
+            }}
           >
             Saltar
           </button>
@@ -62,7 +102,19 @@ export default function PipelineFooter({
           type="button"
           onClick={onContinue}
           disabled={!next || !canContinue}
-          className="inline-flex items-center gap-1 rounded-md bg-brand-pink px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-neutral-300"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            borderRadius: 8,
+            background: !next || !canContinue ? 'var(--bg-4)' : 'var(--blue)',
+            border: '1px solid ' + (!next || !canContinue ? 'var(--line-strong)' : 'var(--blue-lo)'),
+            padding: '6px 16px',
+            fontSize: 12,
+            fontWeight: 700,
+            color: !next || !canContinue ? 'var(--fg-4)' : '#fff',
+            cursor: !next || !canContinue ? 'not-allowed' : 'pointer',
+          }}
         >
           {next ? continueLabel : 'Final'}
         </button>
@@ -76,15 +128,16 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   const label = saveStatusLabel(status);
   const color =
     status === 'saved'
-      ? 'text-emerald-600'
+      ? 'var(--success)'
       : status === 'error'
-      ? 'text-red-600'
-      : 'text-neutral-500';
+      ? 'var(--red-hi)'
+      : 'var(--fg-3)';
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] ${color}`}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color }}>
       {status === 'saving' || status === 'loading' ? (
         <span
-          className="inline-block h-2 w-2 animate-pulse rounded-full bg-current"
+          className="breath"
+          style={{ display: 'inline-block', height: 8, width: 8, borderRadius: 999, background: 'currentColor' }}
           aria-hidden
         />
       ) : status === 'saved' ? (

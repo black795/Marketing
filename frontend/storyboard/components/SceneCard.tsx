@@ -15,12 +15,12 @@ interface Props {
 }
 
 const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
-  hook: { label: 'HOOK', cls: 'bg-brand-pink text-white' },
-  intro: { label: 'INTRO', cls: 'bg-brand-yellow text-neutral-800' },
-  body: { label: 'BODY', cls: 'bg-neutral-200 text-neutral-700' },
-  cta: { label: 'CTA', cls: 'bg-emerald-500 text-white' },
-  outro: { label: 'OUTRO', cls: 'bg-neutral-700 text-white' },
-  transition: { label: 'TRANS', cls: 'bg-violet-500 text-white' },
+  hook: { label: 'HOOK', cls: 'bg-[var(--blue)] text-white' },
+  intro: { label: 'INTRO', cls: 'bg-brand-yellow text-[var(--fg-1)]' },
+  body: { label: 'BODY', cls: 'bg-[var(--bg-3)] text-[var(--fg-2)]' },
+  cta: { label: 'CTA', cls: 'bg-[var(--success)] text-white' },
+  outro: { label: 'OUTRO', cls: 'bg-[var(--fg-2)] text-white' },
+  transition: { label: 'TRANS', cls: 'bg-[var(--blue)] text-white' },
 };
 
 const EMOTION_GLYPH: Record<string, string> = {
@@ -48,10 +48,10 @@ export default function SceneCard({ scene, index, fps }: Props) {
       type="button"
       {...handlers}
       onClick={() => dispatch({ type: 'SELECT_SCENE', sceneId: scene.id })}
-      className={`group relative flex flex-col overflow-hidden rounded-lg border bg-white text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand-pink ${
+      className={`group relative flex flex-col overflow-hidden rounded-lg border bg-[var(--bg-2)] text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--blue)] ${
         isSelected
-          ? 'border-brand-pink ring-2 ring-brand-pink/30'
-          : 'border-neutral-200 hover:border-neutral-300'
+          ? 'border-[var(--blue)] ring-2 ring-[var(--blue)]/30'
+          : 'border-[var(--line)] hover:border-[var(--line-strong)]'
       } ${isDragging ? 'opacity-40' : ''} ${isOver ? 'translate-x-1' : ''} ${
         !scene.included ? 'opacity-60 saturate-50' : ''
       }`}
@@ -82,7 +82,7 @@ export default function SceneCard({ scene, index, fps }: Props) {
             loading="lazy"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-500">
+          <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--fg-3)]">
             sin preview
           </div>
         )}
@@ -107,23 +107,23 @@ export default function SceneCard({ scene, index, fps }: Props) {
 
       {/* Meta */}
       <div className="flex min-h-[3.5rem] flex-1 flex-col gap-1 px-2.5 py-2">
-        <p className="truncate text-[11px] font-semibold text-neutral-800">
+        <p className="truncate text-[11px] font-semibold text-[var(--fg-1)]">
           {String(scene.sceneNumber).padStart(2, '0')} · {scene.name}
         </p>
         {mainCaption && (
-          <p className="line-clamp-2 text-[10px] leading-tight text-neutral-500">
+          <p className="line-clamp-2 text-[10px] leading-tight text-[var(--fg-3)]">
             {mainCaption}
           </p>
         )}
-        <p className="mt-auto flex items-center justify-between gap-1 text-[9px] text-neutral-400">
+        <p className="mt-auto flex items-center justify-between gap-1 text-[9px] text-[var(--fg-4)]">
           <span>{assetCount} asset{assetCount === 1 ? '' : 's'}</span>
           {scene.stylePresetId && (
-            <span className="rounded bg-neutral-100 px-1 py-0.5 font-semibold uppercase">
+            <span className="rounded bg-[var(--bg-3)] px-1 py-0.5 font-semibold uppercase">
               {scene.stylePresetId}
             </span>
           )}
           {scene.versions.length > 0 && (
-            <span className="font-mono text-neutral-500">
+            <span className="font-mono text-[var(--fg-3)]">
               v{scene.versions.length + 1}
             </span>
           )}
@@ -132,7 +132,7 @@ export default function SceneCard({ scene, index, fps }: Props) {
 
       {/* Indicador drop */}
       {isOver && (
-        <div className="absolute inset-y-0 left-0 w-1 bg-brand-pink" aria-hidden />
+        <div className="absolute inset-y-0 left-0 w-1 bg-[var(--blue)]" aria-hidden />
       )}
     </button>
   );

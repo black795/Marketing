@@ -41,7 +41,7 @@ export default function Waveform({ scene, widthPx, barColor, visible }: Props) {
   }, [scene, widthPx, visible]);
 
   if (!visible) {
-    return <div className="h-full w-full bg-neutral-100" aria-hidden />;
+    return <div className="h-full w-full bg-[var(--bg-3)]" aria-hidden />;
   }
 
   return (

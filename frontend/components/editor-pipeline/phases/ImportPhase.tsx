@@ -57,9 +57,9 @@ export default function ImportPhase({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <Spinner size={18} className="text-brand-pink" />
-        <span className="text-sm text-neutral-600">Cargando archivos importados…</span>
+      <div className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-6">
+        <Spinner size={18} className="text-[var(--blue-hi)]" />
+        <span className="text-sm text-[var(--fg-2)]">Cargando archivos importados…</span>
       </div>
     );
   }
@@ -68,30 +68,30 @@ export default function ImportPhase({
 
   if (totalItems === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm text-neutral-600">
+      <div className="rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--bg-2)] p-8 text-center">
+        <p className="text-sm text-[var(--fg-2)]">
           Todavía no hay archivos importados en este proyecto.
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-[var(--fg-3)]">
           Volvé a <strong>Inicio → Edición</strong> y subí tus videos / imágenes.
         </p>
-        {error && <p className="mt-3 text-xs text-red-600">⚠ {error}</p>}
+        {error && <p className="mt-3 text-xs text-[var(--red-hi)]">⚠ {error}</p>}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-2 shadow-sm">
-        <span className="text-xs font-semibold text-neutral-700">Archivos del proyecto</span>
-        <span className="text-[11px] text-neutral-500">
+      <div className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] px-4 py-2">
+        <span className="text-xs font-semibold text-[var(--fg-2)]">Archivos del proyecto</span>
+        <span className="text-[11px] text-[var(--fg-3)]">
           {videos.length} videos · {images.length} imágenes
           {audio ? ' · 1 audio' : ''}
         </span>
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">⚠ {error}</p>
+        <p className="rounded-md bg-[var(--red-soft)] px-3 py-2 text-xs text-[var(--red-hi)]">⚠ {error}</p>
       )}
 
       {videos.length > 0 && (
@@ -132,7 +132,7 @@ export default function ImportPhase({
                 <img
                   src={clip.src ?? undefined}
                   alt={`Imagen ${clip.sceneNumber}`}
-                  className="h-full w-full bg-neutral-100 object-cover"
+                  className="h-full w-full bg-[var(--bg-3)] object-cover"
                 />
               </MediaCard>
             ))}
@@ -142,8 +142,8 @@ export default function ImportPhase({
 
       {audio && (
         <Section title="Audio" emoji="🎵" count={1}>
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <p className="mb-2 text-xs text-neutral-500">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
+            <p className="mb-2 text-xs text-[var(--fg-3)]">
               {audio.src.split('/').slice(-1)[0]}
             </p>
             <audio src={audio.src} controls className="w-full" />
@@ -171,8 +171,8 @@ function Section({
         <span className="text-base" aria-hidden>
           {emoji}
         </span>
-        <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
-        <span className="text-[11px] text-neutral-400">({count})</span>
+        <h3 className="text-sm font-semibold text-[var(--fg-1)]">{title}</h3>
+        <span className="text-[11px] text-[var(--fg-4)]">({count})</span>
       </header>
       {children}
     </section>
@@ -189,12 +189,12 @@ function MediaCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg-2)]">
       <div className="relative aspect-video w-full">{children}</div>
       <div className="px-2 py-1.5">
-        <p className="truncate text-xs font-semibold text-neutral-800">{label}</p>
+        <p className="truncate text-xs font-semibold text-[var(--fg-1)]">{label}</p>
         {sublabel && (
-          <p className="truncate text-[11px] text-neutral-500">{sublabel}</p>
+          <p className="truncate text-[11px] text-[var(--fg-3)]">{sublabel}</p>
         )}
       </div>
     </div>

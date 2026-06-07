@@ -152,23 +152,23 @@ export default function AutoPhase({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-        <Spinner size={18} className="text-brand-pink" />
-        <span className="text-sm text-neutral-600">Cargando proyecto…</span>
+      <div className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-6">
+        <Spinner size={18} className="text-[var(--blue-hi)]" />
+        <span className="text-sm text-[var(--fg-2)]">Cargando proyecto…</span>
       </div>
     );
   }
 
   if (!timeline || scenes.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm text-neutral-600">
+      <div className="rounded-lg border border-dashed border-[var(--line-strong)] bg-[var(--bg-2)] p-8 text-center">
+        <p className="text-sm text-[var(--fg-2)]">
           Este proyecto todavía no tiene clips.
         </p>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-[var(--fg-3)]">
           Subí videos en <strong>Inicio → Edición</strong> primero, después volvé a esta fase.
         </p>
-        {error && <p className="mt-3 text-xs text-red-600">⚠ {error}</p>}
+        {error && <p className="mt-3 text-xs text-[var(--red-hi)]">⚠ {error}</p>}
       </div>
     );
   }
@@ -178,20 +178,20 @@ export default function AutoPhase({
   return (
     <div className="space-y-6">
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">⚠ {error}</p>
+        <p className="rounded-md bg-[var(--red-soft)] px-3 py-2 text-xs text-[var(--red-hi)]">⚠ {error}</p>
       )}
 
-      <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="mb-2 flex items-center justify-between text-[11px] text-neutral-500">
+      <section className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
+        <div className="mb-2 flex items-center justify-between text-[11px] text-[var(--fg-3)]">
           <span>
             {scenes.length} escenas · {totalRawSec.toFixed(1)}s totales · {timeline.fps}fps
           </span>
           <span>{timeline.width}×{timeline.height}</span>
         </div>
-        <label className="block text-sm font-semibold text-neutral-900">
+        <label className="block text-sm font-semibold text-[var(--fg-1)]">
           ¿Qué video querés?
         </label>
-        <p className="mt-0.5 text-[11px] text-neutral-500">
+        <p className="mt-0.5 text-[11px] text-[var(--fg-3)]">
           Frase libre. La IA elige el orden, los subtítulos y el estilo.
         </p>
         <textarea
@@ -200,19 +200,19 @@ export default function AutoPhase({
           disabled={planning || rendering}
           rows={3}
           placeholder="Ej: Reel para TikTok promocionando mi cafetería. Tono casual, subtítulos amarillos."
-          className="mt-2 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-brand-pink focus:outline-none disabled:opacity-60"
+          className="mt-2 w-full rounded-md border border-[var(--line-strong)] bg-[var(--bg-1)] px-3 py-2 text-sm text-[var(--fg-1)] placeholder:text-[var(--fg-4)] focus:border-[var(--blue)] focus:outline-none disabled:opacity-60"
         />
         <div className="mt-3 flex items-center gap-2">
           <button
             type="button"
             onClick={onGenerate}
             disabled={planning || rendering || prompt.trim().length === 0}
-            className="rounded-md bg-brand-pink px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-pink-600 disabled:cursor-not-allowed disabled:bg-neutral-300"
+            className="rounded-md bg-[var(--blue)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--blue-lo)] disabled:cursor-not-allowed disabled:bg-[var(--bg-4)] disabled:text-[var(--fg-4)]"
           >
             {planning ? 'Pensando…' : '✨ Generar plan con IA'}
           </button>
           {planError && (
-            <span className="text-xs text-red-600">⚠ {planError}</span>
+            <span className="text-xs text-[var(--red-hi)]">⚠ {planError}</span>
           )}
         </div>
       </section>
@@ -225,7 +225,7 @@ export default function AutoPhase({
             type="button"
             onClick={onConfirmAndRender}
             disabled={rendering || plan.sceneOrder.length === 0}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+            className="rounded-md bg-[var(--success)] px-4 py-2 text-sm font-bold text-[var(--bg-0)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:bg-[var(--bg-4)] disabled:text-[var(--fg-4)]"
           >
             {rendering ? 'Renderizando…' : '🎬 Confirmar y renderizar'}
           </button>
@@ -233,7 +233,7 @@ export default function AutoPhase({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-semibold text-neutral-700 hover:border-red-400 hover:text-red-600"
+              className="rounded-md border border-[var(--line-strong)] bg-[var(--bg-3)] px-3 py-2 text-sm font-semibold text-[var(--fg-2)] hover:border-[var(--red)] hover:text-[var(--red-hi)]"
             >
               Cancelar
             </button>
@@ -242,53 +242,79 @@ export default function AutoPhase({
       )}
 
       {(rendering || progress || renderError) && (
-        <section className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-neutral-900">Progreso del render</h3>
-          {renderError && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">⚠ {renderError}</p>
-          )}
-          {progress && !renderError && (
-            <div>
-              <div className="flex items-center justify-between text-xs text-neutral-600">
-                <span className="font-mono uppercase tracking-wide text-neutral-500">
-                  {progress.phase}
-                </span>
-                {typeof progress.progress === 'number' && (
-                  <span className="font-semibold text-neutral-700">
-                    {Math.round(progress.progress * 100)}%
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-xs text-neutral-700">{progress.message}</p>
-              {typeof progress.progress === 'number' && (
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div
-                    className="h-full bg-brand-pink transition-all"
-                    style={{ width: `${Math.round(progress.progress * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </section>
+        <RenderProgressPanel progress={progress} renderError={renderError} />
       )}
 
-      {result && (
-        <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-emerald-900">
-            ✅ Render listo · {Math.round(result.durationSeconds * 10) / 10}s
-          </h3>
-          <video src={result.url} controls className="w-full max-w-md rounded-md bg-black" />
-          <a
-            href={result.url}
-            download
-            className="mt-2 inline-block text-xs font-semibold text-emerald-700 hover:underline"
-          >
-            ⬇ Descargar mp4
-          </a>
-        </section>
-      )}
+      {result && <RenderResultPanel url={result.url} durationSeconds={result.durationSeconds} />}
     </div>
+  );
+}
+
+// ---- Panel de progreso de render (compartido visualmente entre fases) ----
+
+export function RenderProgressPanel({
+  progress,
+  renderError,
+}: {
+  progress: RenderProgress | null;
+  renderError: string | null;
+}) {
+  return (
+    <section className="rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-4">
+      <h3 className="mb-2 text-sm font-semibold text-[var(--fg-1)]">Progreso del render</h3>
+      {renderError && (
+        <p className="rounded-md bg-[var(--red-soft)] px-3 py-2 text-xs text-[var(--red-hi)]">⚠ {renderError}</p>
+      )}
+      {progress && !renderError && (
+        <div>
+          <div className="flex items-center justify-between text-xs text-[var(--fg-2)]">
+            <span className="font-mono uppercase tracking-wide text-[var(--fg-3)]">
+              {progress.phase}
+            </span>
+            {typeof progress.progress === 'number' && (
+              <span className="font-semibold text-[var(--fg-2)]">
+                {Math.round(progress.progress * 100)}%
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-[var(--fg-2)]">{progress.message}</p>
+          {typeof progress.progress === 'number' && (
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-3)]">
+              <div
+                className="h-full bg-[var(--blue)] transition-all"
+                style={{ width: `${Math.round(progress.progress * 100)}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function RenderResultPanel({
+  url,
+  durationSeconds,
+  title,
+}: {
+  url: string;
+  durationSeconds: number;
+  title?: string;
+}) {
+  return (
+    <section className="rounded-lg border border-[rgba(43,212,164,0.3)] bg-[var(--success-soft)] p-4">
+      <h3 className="mb-2 text-sm font-semibold text-[var(--success)]">
+        ✅ {title ?? 'Render listo'} · {Math.round(durationSeconds * 10) / 10}s
+      </h3>
+      <video src={url} controls className="w-full max-w-md rounded-md bg-black" />
+      <a
+        href={url}
+        download
+        className="mt-2 inline-block text-xs font-semibold text-[var(--success)] hover:underline"
+      >
+        ⬇ Descargar mp4
+      </a>
+    </section>
   );
 }
 
@@ -304,24 +330,24 @@ function PlanPreview({
   disabled: boolean;
 }) {
   return (
-    <section className="space-y-4 rounded-lg border border-violet-200 bg-violet-50/50 p-4 shadow-sm">
+    <section className="space-y-4 rounded-lg border border-[var(--blue-ring)] bg-[var(--blue-soft)] p-4">
       <header>
-        <h3 className="text-sm font-semibold text-violet-900">📋 Plan propuesto</h3>
+        <h3 className="text-sm font-semibold text-[var(--fg-1)]">📋 Plan propuesto</h3>
         {plan.reasoning && (
-          <p className="mt-1 text-xs italic text-violet-700">"{plan.reasoning}"</p>
+          <p className="mt-1 text-xs italic text-[var(--blue-hi)]">"{plan.reasoning}"</p>
         )}
       </header>
 
       <div>
-        <p className="text-[11px] font-semibold text-neutral-700">Orden de escenas</p>
+        <p className="text-[11px] font-semibold text-[var(--fg-2)]">Orden de escenas</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {plan.sceneOrder.length === 0 ? (
-            <span className="text-xs text-red-600">⚠ La IA no propuso ninguna escena</span>
+            <span className="text-xs text-[var(--red-hi)]">⚠ La IA no propuso ninguna escena</span>
           ) : (
             plan.sceneOrder.map((n, i) => (
               <span
                 key={`${n}-${i}`}
-                className="rounded bg-violet-200 px-2 py-0.5 font-mono text-[11px] font-semibold text-violet-900"
+                className="rounded border border-[var(--blue-ring)] bg-[var(--blue-soft)] px-2 py-0.5 font-mono text-[11px] font-semibold text-[var(--blue-hi)]"
               >
                 #{n}
               </span>
@@ -331,11 +357,11 @@ function PlanPreview({
       </div>
 
       <div>
-        <p className="text-[11px] font-semibold text-neutral-700">
+        <p className="text-[11px] font-semibold text-[var(--fg-2)]">
           Subtítulos ({plan.captions.length})
         </p>
         {plan.captions.length === 0 ? (
-          <p className="mt-1 text-xs italic text-neutral-500">Sin subtítulos.</p>
+          <p className="mt-1 text-xs italic text-[var(--fg-3)]">Sin subtítulos.</p>
         ) : (
           <ul className="mt-1 space-y-2">
             {plan.captions.map((c, i) => {
@@ -343,15 +369,15 @@ function PlanPreview({
               return (
                 <li
                   key={i}
-                  className="flex items-start gap-2 rounded-md border border-violet-200 bg-white px-3 py-2 text-xs"
+                  className="flex items-start gap-2 rounded-md border border-[var(--line)] bg-[var(--bg-2)] px-3 py-2 text-xs"
                 >
-                  <span className="mt-0.5 font-mono text-violet-600">
+                  <span className="mt-0.5 font-mono text-[var(--blue-hi)]">
                     {c.startSeconds.toFixed(1)}s
                   </span>
-                  <span className="text-neutral-400">·</span>
-                  <span className="font-mono text-violet-600">{c.durationSeconds.toFixed(1)}s</span>
-                  <span className="text-neutral-400">·</span>
-                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">
+                  <span className="text-[var(--fg-4)]">·</span>
+                  <span className="font-mono text-[var(--blue-hi)]">{c.durationSeconds.toFixed(1)}s</span>
+                  <span className="text-[var(--fg-4)]">·</span>
+                  <span className="rounded bg-[var(--bg-3)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--fg-2)]">
                     {style?.label ?? c.style}
                   </span>
                   <input
@@ -362,7 +388,7 @@ function PlanPreview({
                       onChange(next);
                     }}
                     disabled={disabled}
-                    className="flex-1 rounded border border-transparent bg-transparent px-1 text-neutral-800 hover:border-neutral-200 focus:border-brand-pink focus:outline-none"
+                    className="flex-1 rounded border border-transparent bg-transparent px-1 text-[var(--fg-1)] hover:border-[var(--line)] focus:border-[var(--blue)] focus:outline-none"
                   />
                 </li>
               );
@@ -371,7 +397,7 @@ function PlanPreview({
         )}
       </div>
 
-      <p className="text-[10px] text-neutral-500">
+      <p className="text-[10px] text-[var(--fg-3)]">
         Podés editar el texto de cada subtítulo antes de confirmar. Para
         cambios más finos (orden, timing, estilo) usá las fases siguientes.
       </p>

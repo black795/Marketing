@@ -43,7 +43,7 @@ export default function RegenTargetMenu({ scene, variant = 'button' }: Props) {
   if (variant === 'inline') {
     return (
       <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           Regenerar
         </p>
         <ul className="grid grid-cols-3 gap-1.5">
@@ -52,7 +52,7 @@ export default function RegenTargetMenu({ scene, variant = 'button' }: Props) {
               <button
                 type="button"
                 onClick={() => enqueue(m.id)}
-                className="flex w-full flex-col items-center gap-0.5 rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-center text-[10px] font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+                className="flex w-full flex-col items-center gap-0.5 rounded-md border border-[var(--line)] bg-[var(--bg-2)] px-2 py-1.5 text-center text-[10px] font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
                 title={m.description}
               >
                 <span className="text-base leading-none">{m.emoji}</span>
@@ -70,13 +70,13 @@ export default function RegenTargetMenu({ scene, variant = 'button' }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-700 hover:border-brand-pink hover:text-brand-pink"
+        className="inline-flex items-center gap-1 rounded-md border border-[var(--line-strong)] bg-[var(--bg-2)] px-2.5 py-1 text-xs font-semibold text-[var(--fg-2)] hover:border-[var(--blue)] hover:text-[var(--blue-hi)]"
       >
         🪄 Regenerar…
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-1 w-64 rounded-lg border border-neutral-200 bg-white p-1 shadow-xl">
-          <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+        <div className="absolute right-0 z-30 mt-1 w-64 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-1 shadow-xl">
+          <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
             Regen modular — {scene.name}
           </p>
           <ul>
@@ -85,12 +85,12 @@ export default function RegenTargetMenu({ scene, variant = 'button' }: Props) {
                 <button
                   type="button"
                   onClick={() => enqueue(m.id)}
-                  className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-neutral-50"
+                  className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-[var(--bg-1)]"
                 >
                   <span className="text-base leading-none">{m.emoji}</span>
                   <span className="min-w-0">
-                    <span className="block font-semibold text-neutral-800">{m.label}</span>
-                    <span className="block text-[10px] text-neutral-500">{m.description}</span>
+                    <span className="block font-semibold text-[var(--fg-1)]">{m.label}</span>
+                    <span className="block text-[10px] text-[var(--fg-3)]">{m.description}</span>
                   </span>
                 </button>
               </li>

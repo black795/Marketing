@@ -46,16 +46,16 @@ export function statusColor(status: SceneStatusUi): {
 } {
   switch (status) {
     case 'pending':
-      return { bg: 'bg-neutral-100', text: 'text-neutral-600', ring: 'ring-neutral-200' };
+      return { bg: 'bg-[var(--bg-3)]', text: 'text-[var(--fg-2)]', ring: 'ring-[var(--line)]' };
     case 'generating':
     case 'regenerating':
       return { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-blue-200' };
     case 'rendered':
-      return { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200' };
+      return { bg: 'bg-[var(--success-soft)]', text: 'text-[var(--success)]', ring: 'ring-[rgba(43,212,164,0.3)]' };
     case 'modified':
-      return { bg: 'bg-amber-50', text: 'text-amber-800', ring: 'ring-amber-200' };
+      return { bg: 'bg-[var(--warning-soft)]', text: 'text-[var(--warning)]', ring: 'ring-[rgba(245,181,68,0.3)]' };
     case 'failed':
-      return { bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-red-200' };
+      return { bg: 'bg-[var(--red-soft)]', text: 'text-[var(--red-hi)]', ring: 'ring-[var(--red-ring)]' };
   }
 }
 

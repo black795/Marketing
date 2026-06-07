@@ -13,6 +13,8 @@ import {
 } from '../primitives';
 import { projectStore, useProject } from '../project-store';
 import SceneAdvancedPanel from '../SceneAdvancedPanel';
+import StyleCreatorModal from '../StyleCreatorModal';
+import SaveProjectButton from '../SaveProjectButton';
 import {
   streamGenerateImagesFromScript,
   streamRegenerateImages,
@@ -44,6 +46,8 @@ export default function ScenesScreen() {
 
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [styleCreatorOpen, setStyleCreatorOpen] = useState(false);
+  const [styleSaved, setStyleSaved] = useState(false);
   const [selectedForRegen, setSelectedForRegen] = useState<Set<number>>(new Set());
   const [regenerating, setRegenerating] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
@@ -416,6 +420,17 @@ export default function ScenesScreen() {
                     Cancelar
                   </Button>
                 )}
+                <SaveProjectButton />
+                <Button
+                  variant="secondary"
+                  size="md"
+                  icon={Icon.Star}
+                  onClick={() => setStyleCreatorOpen(true)}
+                  disabled={done === 0 || isStreaming}
+                  title="Guardar imágenes generadas como un estilo reutilizable"
+                >
+                  {styleSaved ? 'Estilo guardado ✓' : 'Guardar estilo'}
+                </Button>
                 <Button
                   variant="secondary"
                   size="md"
@@ -563,6 +578,21 @@ export default function ScenesScreen() {
           }
         />
       )}
+
+      <StyleCreatorModal
+        open={styleCreatorOpen}
+        onClose={() => setStyleCreatorOpen(false)}
+        generatedImages={renderScenes
+          .filter((s) => s.image_url)
+          .map((s) => ({
+            url: s.image_url as string,
+            label: `SC${String(s.scene_number).padStart(2, '0')}`,
+          }))}
+        onCreated={() => {
+          setStyleSaved(true);
+          setTimeout(() => setStyleSaved(false), 2000);
+        }}
+      />
     </div>
   );
 }

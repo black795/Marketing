@@ -120,7 +120,10 @@
   box-sizing: border-box;
 }
 
-.koda-os-root button {
+/* `:where()` keeps these resets at specificity (0,0,1) so that Tailwind
+   utility classes (used by the editor pipeline inside the shell) win, while
+   inline styles (used by the koda-os primitives) keep winning over both. */
+:where(.koda-os-root) button {
   font-family: inherit;
   color: inherit;
   background: none;
@@ -129,9 +132,9 @@
   cursor: pointer;
 }
 
-.koda-os-root input,
-.koda-os-root textarea,
-.koda-os-root select {
+:where(.koda-os-root) input,
+:where(.koda-os-root) textarea,
+:where(.koda-os-root) select {
   font-family: inherit;
   color: inherit;
 }

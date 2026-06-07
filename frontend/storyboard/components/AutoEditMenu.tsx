@@ -52,7 +52,7 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
   if (variant === 'wide') {
     return (
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
           Auto edit IA {onlySceneId ? '(solo esta escena)' : '(proyecto)'}
         </p>
         <ul className="grid grid-cols-2 gap-1.5">
@@ -61,13 +61,13 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
               <button
                 type="button"
                 onClick={() => apply(p)}
-                className="flex w-full items-start gap-1.5 rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-left text-[11px] hover:border-brand-pink"
+                className="flex w-full items-start gap-1.5 rounded-md border border-[var(--line)] bg-[var(--bg-2)] px-2 py-1.5 text-left text-[11px] hover:border-[var(--blue)]"
                 title={p.description}
               >
                 <span className="text-base leading-none">{p.emoji}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold text-neutral-800">{p.label}</span>
-                  <span className="block truncate text-[10px] text-neutral-500">
+                  <span className="block truncate font-semibold text-[var(--fg-1)]">{p.label}</span>
+                  <span className="block truncate text-[10px] text-[var(--fg-3)]">
                     {p.description}
                   </span>
                 </span>
@@ -76,7 +76,7 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
           ))}
         </ul>
         {lastReport && (
-          <p className="rounded-md bg-emerald-50 px-2 py-1 text-[10px] text-emerald-700">
+          <p className="rounded-md bg-[var(--success-soft)] px-2 py-1 text-[10px] text-[var(--success)]">
             {lastReport}
           </p>
         )}
@@ -89,15 +89,15 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-brand-pink to-pink-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:from-pink-600 hover:to-pink-600"
+        className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-[var(--blue)] to-[var(--blue-hi)] px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:from-[var(--blue)] hover:to-[var(--blue-hi)]"
         title="Auto-edit: aplica un preset IA al proyecto entero"
       >
         ✨ Auto-edit
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-1 w-72 rounded-lg border border-neutral-200 bg-white p-2 shadow-xl">
-          <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+        <div className="absolute right-0 z-30 mt-1 w-72 rounded-lg border border-[var(--line)] bg-[var(--bg-2)] p-2 shadow-xl">
+          <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--fg-3)]">
             Elige un preset para todo el proyecto
           </p>
           <ul className="space-y-0.5">
@@ -106,14 +106,14 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
                 <button
                   type="button"
                   onClick={() => apply(p)}
-                  className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-neutral-50"
+                  className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-[var(--bg-1)]"
                 >
                   <span className="text-base leading-none">{p.emoji}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-neutral-800">
+                    <span className="block truncate font-semibold text-[var(--fg-1)]">
                       {p.label}
                     </span>
-                    <span className="block truncate text-[10px] text-neutral-500">
+                    <span className="block truncate text-[10px] text-[var(--fg-3)]">
                       {p.description}
                     </span>
                   </span>
@@ -122,7 +122,7 @@ export default function AutoEditMenu({ onlySceneId, variant = 'compact' }: Props
             ))}
           </ul>
           {lastReport && (
-            <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-[10px] text-emerald-700">
+            <p className="mt-2 rounded-md bg-[var(--success-soft)] px-2 py-1 text-[10px] text-[var(--success)]">
               {lastReport}
             </p>
           )}

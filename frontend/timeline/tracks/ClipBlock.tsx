@@ -94,7 +94,7 @@ export default function ClipBlock({
       onClick={onClickBlock}
       onMouseDown={onMouseDownBody}
       className={`absolute overflow-hidden rounded-md border text-left text-white shadow-sm transition ${color} ${
-        isSelected ? 'border-white outline outline-2 outline-brand-pink' : 'border-black/10 hover:border-white'
+        isSelected ? 'border-white outline outline-2 outline-[var(--blue)]' : 'border-black/10 hover:border-white'
       } ${isLive ? 'opacity-80' : ''} ${!scene.included ? 'opacity-50 saturate-0' : ''}`}
       style={{ left: xPx, width: widthPx, height: heightPx, top: 0 }}
       title={`${label} · ${scene.durationFrames} frames`}
@@ -103,12 +103,12 @@ export default function ClipBlock({
       {trimmable && (
         <>
           <div
-            className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-ew-resize bg-white/20 hover:bg-white/60"
+            className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-ew-resize bg-[var(--bg-2)]/20 hover:bg-[var(--bg-2)]/60"
             onMouseDown={onTrimLeft}
             aria-label="Trim izquierdo"
           />
           <div
-            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-ew-resize bg-white/20 hover:bg-white/60"
+            className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-ew-resize bg-[var(--bg-2)]/20 hover:bg-[var(--bg-2)]/60"
             onMouseDown={onTrimRight}
             aria-label="Trim derecho"
           />
